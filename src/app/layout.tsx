@@ -12,7 +12,7 @@ import "./globals.css";
 
 /* ── Cormorant Garamond — editorial heading font ── */
 const cormorant = Cormorant_Garamond({
-  weight: ["300", "400", "600"],
+  weight: ["300", "400", "600", "700"],
   style: ["normal", "italic"],
   subsets: ["latin"],
   display: "swap",

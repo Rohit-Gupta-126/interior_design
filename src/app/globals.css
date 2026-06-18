@@ -1,233 +1,562 @@
 /* ============================================================
-   GLOBALS.CSS
-   Tailwind v4 import + custom CSS for scroll-snap, SVG stroke
-   animation, fade-ins, and the overall dark luxury design system.
+   GLOBALS.CSS — ARKA Interiors
+   Luxury full-bleed editorial architecture portfolio.
+   Two colors: #0a0a0a (near-black) + #d4af37 (warm amber).
+   Featuring Apple-style Liquid Glass UI components.
    ============================================================ */
 
 @import "tailwindcss";
 
 /* ── Design Tokens ─────────────────────────────────────────── */
 :root {
-  --color-bg:       #0a0a0a;   /* near-black canvas */
-  --color-accent:   #d4af37;   /* warm amber */
-  --color-accent-dim: #a07c20; /* dimmed amber for secondary text */
-  --color-surface:  #111111;   /* slightly lifted surface */
-  --color-border:   rgba(212, 175, 55, 0.15);
+  --bg:            #0a0a0a;
+  --surface:       #111111;
+  --accent:        #e5c158; /* Slightly brighter, more visible gold */
+  --accent-dim:    rgba(229, 193, 88, 0.55);
+  --accent-border: rgba(229, 193, 88, 0.22);
+  --text-primary:  #ffffff; /* Pure white for maximum visibility */
+  --text-secondary: rgba(255, 255, 255, 0.88); /* High contrast warm gray/white */
+  --text-meta:     rgba(255, 255, 255, 0.6); /* Highly legible metadata */
 
-  /* Typography custom properties */
-  --font-editorial: var(--font-cormorant);  /* Cormorant Garamond */
-  --font-ui:        var(--font-dm-sans);    /* DM Sans */
+  --font-serif: var(--font-cormorant), 'Times New Roman', Georgia, serif;
+  --font-sans:  var(--font-dm-sans), system-ui, sans-serif;
 }
 
-/* ── Reset & Base ───────────────────────────────────────────── */
-*,
-*::before,
-*::after {
+/* ── Reset ─────────────────────────────────────────────────── */
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-html {
-  background-color: var(--color-bg);
-  color: #e8e0d0;
-  font-family: var(--font-ui), system-ui, sans-serif;
-  /* Disable default browser scroll behaviour so our snap container controls it */
-  overflow: hidden;
-  height: 100%;
-}
-
-body {
+html, body {
   height: 100%;
   overflow: hidden;
-  background-color: var(--color-bg);
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }
 
-/* ── Scrollbar Styling ──────────────────────────────────────── */
-::-webkit-scrollbar {
-  width: 2px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--color-accent);
-  border-radius: 2px;
-}
+/* ── Scrollbar ─────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 9999px; }
 
-/* ── Scroll-Snap Container ──────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   SCROLL-SNAP CONTAINER
+   ═══════════════════════════════════════════════════════════ */
 .snap-container {
+  position: relative;
+  z-index: 2;
   height: 100vh;
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
   scroll-behavior: smooth;
-  /* Performance hint: promote to its own layer */
   will-change: scroll-position;
-  /* Hide scrollbar while keeping functionality */
   scrollbar-width: thin;
-  scrollbar-color: var(--color-accent) transparent;
+  scrollbar-color: var(--accent) transparent;
 }
 
-/* ── Individual Snap Sections ───────────────────────────────── */
-/* display/position/overflow are set via Tailwind directly on <section>.
-   Only the scroll-snap alignment is handled here. */
-.snap-section {
-  scroll-snap-align: start;
-  height: 100vh;
-  width: 100%;
+/* ═══════════════════════════════════════════════════════════
+   DESKTOP CINEMATIC VIDEO-FLOW LAYOUT
+   ═══════════════════════════════════════════════════════════ */
+@media (min-width: 901px) {
+  .cinematic-bg-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+    pointer-events: none;
+    perspective: 1200px;
+    transform-style: preserve-3d;
+    overflow: hidden;
+  }
+
+  .ps-image-wrap-mobile {
+    display: none;
+  }
+
+  .ps-root {
+    scroll-snap-align: start;
+    height: 100vh;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    pointer-events: none; /* Clicks bypass the scrolled grid to fixed panel */
+    perspective: 1200px;
+    transform-style: preserve-3d;
+  }
+
+  /* Fixed Background Image wrap */
+  .ps-image-wrap {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+    overflow: hidden;
+    opacity: 0; /* JS handles fading */
+    pointer-events: none;
+    perspective: 1200px;
+    transform-style: preserve-3d;
+    will-change: opacity;
+  }
+
+  .ps-photo {
+    will-change: transform;
+    /* Direct JS updates transform to avoid transition lag */
+  }
+
+  /* Fixed Editorial text content container */
+  .ps-content {
+    position: fixed;
+    top: 0;
+    height: 100vh;
+    width: 100vw;
+    max-width: 620px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    z-index: 10;
+    opacity: 0;
+    will-change: opacity, transform;
+    pointer-events: none;
+  }
+
+  .ps-content.align-left {
+    left: 0 !important;
+    right: auto !important;
+    padding: 3.5rem 4rem 2.5rem 6rem;
+    transform: translate3d(-60px, 0, 0); /* JS handles sliding */
+  }
+
+  .ps-content.align-right {
+    right: 0 !important;
+    left: auto !important;
+    padding: 3.5rem 6rem 2.5rem 4rem;
+    transform: translate3d(60px, 0, 0); /* JS handles sliding */
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .ps-content.align-right .floor-plan-svg {
+    left: 4.5rem !important;
+    right: auto !important;
+  }
+
+  /* Dark to transparent horizontal scrims */
+  .ps-gradient-left, .ps-gradient-right {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 65%;
+    z-index: 2;
+    pointer-events: none;
+    will-change: opacity;
+    opacity: 0; /* JS handles blending */
+  }
+
+  .ps-gradient-left {
+    left: 0;
+    background: linear-gradient(
+      to right,
+      rgba(10, 10, 10, 0.98) 0%,
+      rgba(10, 10, 10, 0.88) 25%,
+      rgba(10, 10, 10, 0.5) 55%,
+      rgba(10, 10, 10, 0) 100%
+    );
+  }
+
+  .ps-gradient-right {
+    right: 0;
+    background: linear-gradient(
+      to left,
+      rgba(10, 10, 10, 0.98) 0%,
+      rgba(10, 10, 10, 0.88) 25%,
+      rgba(10, 10, 10, 0.5) 55%,
+      rgba(10, 10, 10, 0) 100%
+    );
+  }
 }
 
-/* ── Left Editorial Panel ───────────────────────────────────── */
-/* Content layer is now pure Tailwind in ProjectSection.tsx:
-   className="relative z-10 flex flex-col justify-center h-full w-[50vw] px-12"
-   .panel-left is kept here only for potential mobile override use. */
-.panel-left {
-  width: 50%;
-  height: 100%;
+/* ═══════════════════════════════════════════════════════════
+   MOBILE STACKED FLOW LAYOUT
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .cinematic-bg-container {
+    display: none;
+  }
+
+  .snap-container {
+    scroll-snap-type: none;
+    overflow-y: auto;
+  }
+
+  .ps-root {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background: var(--bg);
+    min-height: 100vh;
+    padding-top: 5rem;
+    align-items: stretch;
+  }
+
+  .ps-image-wrap-mobile {
+    position: relative;
+    height: 50vh;
+    width: 100%;
+    z-index: 1;
+    overflow: hidden;
+  }
+
+  .ps-photo-mobile {
+    object-fit: cover;
+    object-position: center;
+  }
+
+  .ps-gradient-mobile {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      to bottom,
+      rgba(10, 10, 10, 0.8) 0%,
+      rgba(10, 10, 10, 0) 50%,
+      rgba(10, 10, 10, 0.95) 100%
+    );
+    z-index: 2;
+  }
+
+  .ps-content {
+    position: relative;
+    width: 100%;
+    max-width: none !important;
+    left: auto !important;
+    right: auto !important;
+    padding: 2.5rem 2rem 4rem !important;
+    z-index: 10;
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: auto !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EDITORIAL TYPOGRAPHY
+   ═══════════════════════════════════════════════════════════ */
+.ps-overline {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.ps-idx {
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.ps-cat {
+  font-family: var(--font-sans);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--text-secondary); /* Upgraded from --text-meta to be more visible */
+  padding-left: 1rem;
+  border-left: 1px solid var(--accent-border);
+}
+
+.ps-title {
+  font-family: var(--font-serif);
+  font-size: clamp(2.8rem, 4.2vw, 4.8rem); /* Compacted slightly to guarantee screen fit */
+  font-weight: 700;
+  font-style: italic;
+  line-height: 0.95;
+  letter-spacing: -0.025em;
+  color: var(--text-primary);
+  max-width: 15ch;
+  margin-bottom: 0;
+  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+}
+
+.ps-title-alt {
+  display: block;
+  color: var(--accent);
+  font-weight: 300;
+}
+
+.ps-rule {
+  width: 3rem;
+  height: 2px; /* Thicker rule for visual grounding */
+  background: var(--accent);
+  margin: 1rem 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.ps-desc {
+  font-family: var(--font-serif);
+  font-size: clamp(0.95rem, 1.15vw, 1.12rem); /* Slightly smaller for screen fit */
+  font-weight: 400; /* Increased to 400 for high-contrast visibility */
+  font-style: italic;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  max-width: 36ch;
+  margin-bottom: 1.25rem;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+}
+
+.ps-meta {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding: 4rem 4rem 4rem 5rem;
+  gap: 0.45rem;
+  margin-bottom: 1.5rem;
+}
+
+.ps-meta-row {
+  display: flex;
+  align-items: baseline;
+  gap: 1.25rem;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.ps-meta-row dt {
+  font-family: var(--font-sans);
+  font-size: 0.6rem;
+  font-weight: 600; /* Bolder metadata label */
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--text-meta);
+  min-width: 4.5rem;
+}
+
+.ps-meta-row dd {
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  color: var(--text-primary); /* Upgraded to text-primary (pure white) for contrast */
+}
+
+/* ═══════════════════════════════════════════════════════════
+   APPLE visionOS GLASS CARD (INTERACTIVE)
+   ═══════════════════════════════════════════════════════════ */
+.ps-card {
   position: relative;
-  z-index: 10;
+  border-radius: 20px;
+  padding: 1rem 1.5rem;
+  max-width: 250px;
+  margin-bottom: 0.5rem; /* Reduced to fit viewports */
+  overflow: hidden;
+  text-align: left; /* Keep card contents left-aligned */
+  
+  /* Apple visionOS Frosted Specular Glass */
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(30px) saturate(210%);
+  -webkit-backdrop-filter: blur(30px) saturate(210%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    0 16px 40px rgba(0, 0, 0, 0.5), 
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+    
+  transform-style: preserve-3d;
+  perspective: 1000px;
+  will-change: transform;
+  transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), 
+              box-shadow 0.3s ease, 
+              border-color 0.3s ease,
+              background-color 0.3s ease;
+  cursor: pointer;
 }
 
-/* ── Fade-In Animation (IntersectionObserver triggered) ─────── */
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(28px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.ps-card:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 
+    0 24px 48px rgba(0, 0, 0, 0.6), 
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+.ps-card-inner {
+  transform: translateZ(15px);
+  transform-style: preserve-3d;
 }
 
-/* Elements with .animate-hidden start invisible */
-.animate-hidden {
-  opacity: 0;
-  transform: translateY(28px);
-  transition: none;
+.ps-card-label {
+  font-family: var(--font-sans);
+  font-size: 0.58rem;
+  font-weight: 600; /* Bolder for contrast */
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7); /* Upgraded from text-meta for contrast */
+  margin-bottom: 0.25rem;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
-/* When JS adds .animate-visible, trigger the entrance */
-.animate-visible {
-  animation: fadeUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.ps-card-value {
+  font-family: var(--font-serif);
+  font-size: 2.1rem;
+  font-weight: 700;
+  font-style: italic;
+  color: #ffffff; /* White value inside glass for visionOS compliance */
+  line-height: 1.1;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
-/* Staggered delays for child elements */
-.animate-delay-1 { animation-delay: 0.1s; }
-.animate-delay-2 { animation-delay: 0.25s; }
-.animate-delay-3 { animation-delay: 0.4s; }
-.animate-delay-4 { animation-delay: 0.55s; }
-.animate-delay-5 { animation-delay: 0.7s; }
-
-/* Image fade-in (no vertical movement) */
-.img-hidden {
-  opacity: 0;
-  transition: opacity 1.1s ease;
-}
-.img-visible {
-  opacity: 1;
+.ps-card-suffix {
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-left: 0.2rem;
+  color: var(--accent); /* High contrast accent color */
 }
 
-/* ── SVG Floor Plan Drawing Animation ───────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   SVG FLOOR PLAN — animated architectural outline
+   ═══════════════════════════════════════════════════════════ */
 .floor-plan-svg {
   position: absolute;
-  bottom: 2.5rem;
-  left: 4rem;
-  width: 220px;
-  opacity: 0.35;
+  bottom: 3rem;
+  right: 4.5rem;
+  width: 200px;
+  opacity: 0.25;
   pointer-events: none;
+  z-index: 15;
 }
 
-/* The SVG path starts fully "invisible" (dashoffset = total length).
-   JS will add .draw-active to trigger the animation via CSS. */
 .floor-plan-svg .floor-path {
   fill: none;
-  stroke: var(--color-accent);
-  stroke-width: 1px;
+  stroke: var(--accent);
+  stroke-width: 0.8px;
   stroke-linecap: round;
   stroke-linejoin: round;
-  /* Large dasharray to cover any path length */
   stroke-dasharray: 1200;
   stroke-dashoffset: 1200;
-  transition: none;
 }
 
-/* When .draw-active is applied by IntersectionObserver, animate */
 .floor-plan-svg.draw-active .floor-path {
-  animation: drawPath 2.2s cubic-bezier(0.4, 0, 0.2, 1) 0.4s forwards;
+  animation: drawPath 2.6s cubic-bezier(0.4, 0, 0.2, 1) 0.5s forwards;
 }
 
 @keyframes drawPath {
-  to {
-    stroke-dashoffset: 0;
-  }
+  to { stroke-dashoffset: 0; }
 }
 
-/* ── Typography ─────────────────────────────────────────────── */
-.editorial-overline {
-  font-family: var(--font-ui), system-ui, sans-serif;
-  font-size: 0.68rem;
-  letter-spacing: 0.35em;
-  text-transform: uppercase;
-  color: var(--color-accent);
-  font-weight: 400;
+/* ═══════════════════════════════════════════════════════════
+   ENTRANCE ANIMATIONS (FADE-IN EFFECT)
+   ═══════════════════════════════════════════════════════════ */
+.fi-init {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.editorial-headline {
-  font-family: var(--font-editorial), 'Times New Roman', serif;
-  font-size: clamp(3.5rem, 5.5vw, 5.5rem);
-  line-height: 0.92;
-  font-weight: 300;
+.fi {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.fi-d1 { transition-delay: 0.1s; }
+.fi-d2 { transition-delay: 0.22s; }
+.fi-d3 { transition-delay: 0.35s; }
+.fi-d4 { transition-delay: 0.48s; }
+.fi-d5 { transition-delay: 0.6s; }
+
+/* ═══════════════════════════════════════════════════════════
+   NAVIGATION HEADER (APPLE FLOATING CAPSULE)
+   ═══════════════════════════════════════════════════════════ */
+.site-nav {
+  position: fixed;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 1200px;
+  z-index: 200;
+  padding: 0.65rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  
+  /* Apple visionOS Frosted Glass Capsule */
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(30px) saturate(190%);
+  -webkit-backdrop-filter: blur(30px) saturate(190%);
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 
+    0 16px 48px rgba(0, 0, 0, 0.45), 
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-logo {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
   font-style: italic;
-  color: #f0e8d8;
-  letter-spacing: -0.02em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-primary);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
-.editorial-subhead {
-  font-family: var(--font-editorial), 'Times New Roman', serif;
-  font-size: clamp(1.1rem, 1.8vw, 1.4rem);
-  line-height: 1.6;
-  font-weight: 300;
-  color: rgba(224, 210, 185, 0.7);
-  max-width: 36ch;
-}
+.nav-logo span { color: var(--accent); }
 
-.editorial-body {
-  font-family: var(--font-ui), system-ui, sans-serif;
-  font-size: 0.8rem;
-  line-height: 1.8;
-  color: rgba(200, 190, 170, 0.55);
-  letter-spacing: 0.02em;
-  max-width: 42ch;
-}
-
-/* ── Amber Divider Line ─────────────────────────────────────── */
-.amber-rule {
-  width: 3rem;
-  height: 1px;
-  background: var(--color-accent);
-  margin: 1.5rem 0;
-}
-
-/* ── Project Index Badge ────────────────────────────────────── */
-.project-index {
-  font-family: var(--font-ui), system-ui, sans-serif;
-  font-size: 0.65rem;
-  letter-spacing: 0.2em;
-  color: var(--color-accent-dim);
+.nav-tagline {
+  font-family: var(--font-sans);
+  font-size: 0.58rem;
+  font-weight: 600; /* Increased from 500 for legibility */
+  letter-spacing: 0.32em;
   text-transform: uppercase;
+  color: var(--text-secondary); /* Upgraded from --text-meta for visibility */
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
-/* ── Vertical Progress Indicator ────────────────────────────── */
+.nav-enquire {
+  font-family: var(--font-sans);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--text-primary); /* Changed to pure white */
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.25); /* Translucent white border */
+  background: rgba(255, 255, 255, 0.05); /* Very light glass fill */
+  padding: 0.45rem 1.25rem;
+  border-radius: 9999px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(4px);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.nav-enquire:hover {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 15px rgba(229, 193, 88, 0.5);
+  text-shadow: none;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PROGRESS NAV — vertical dot indicator (right edge)
+   ═══════════════════════════════════════════════════════════ */
 .progress-nav {
   position: fixed;
   right: 2rem;
@@ -237,127 +566,68 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.8rem;
+  padding: 1.2rem 0.65rem;
+  
+  /* Apple visionOS Frosted Glass Capsule */
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(30px) saturate(190%);
+  -webkit-backdrop-filter: blur(30px) saturate(190%);
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 
+    0 12px 32px rgba(0, 0, 0, 0.4), 
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  pointer-events: auto;
 }
 
 .progress-dot {
-  width: 4px;
-  height: 4px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: rgba(212, 175, 55, 0.25);
-  transition: all 0.4s ease;
+  background: rgba(255, 255, 255, 0.45); /* Increased visibility for inactive dots */
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
 }
 
 .progress-dot.active {
-  background: var(--color-accent);
-  height: 20px;
-  border-radius: 2px;
+  background: var(--accent);
+  height: 24px;
+  border-radius: 9999px;
+  border-color: rgba(229, 193, 88, 0.75);
+  box-shadow: 
+    0 0 14px rgba(229, 193, 88, 0.65),
+    inset 0 1px 1px rgba(255, 255, 255, 0.35);
 }
 
-/* ── Navigation Header ──────────────────────────────────────── */
-.site-nav {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 200;
-  padding: 2rem 5rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  /* Glassmorphism top bar */
-  background: linear-gradient(
-    to bottom,
-    rgba(10, 10, 10, 0.95) 0%,
-    rgba(10, 10, 10, 0) 100%
-  );
+.progress-dot:hover:not(.active) {
+  background: rgba(212, 175, 55, 0.5);
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
+  transform: scale(1.25);
 }
 
-.nav-logo {
-  font-family: var(--font-editorial), 'Times New Roman', serif;
-  font-size: 1.3rem;
-  font-style: italic;
-  letter-spacing: 0.05em;
-  color: #f0e8d8;
-}
-
-.nav-logo span {
-  color: var(--color-accent);
-}
-
-.nav-tagline {
-  font-family: var(--font-ui), system-ui, sans-serif;
-  font-size: 0.65rem;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: rgba(200, 185, 155, 0.5);
-}
-
-/* ── Tilt Card Container ────────────────────────────────────── */
-.tilt-card {
-  border: 1px solid var(--color-border);
-  background: rgba(20, 18, 14, 0.6);
-  backdrop-filter: blur(8px);
-  padding: 1.5rem 2rem;
-  margin-top: 2rem;
-  transform-style: preserve-3d;
-  perspective: 800px;
-  will-change: transform;
-  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
-  cursor: default;
-  max-width: 360px;
-}
-
-.tilt-card:hover {
-  box-shadow: 0 20px 60px rgba(212, 175, 55, 0.08);
-}
-
-.tilt-card-content {
-  transform: translateZ(12px);
-  transform-style: preserve-3d;
-}
-
-.tilt-stat-label {
-  font-size: 0.62rem;
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-  color: var(--color-accent-dim);
-  margin-bottom: 0.25rem;
-}
-
-.tilt-stat-value {
-  font-family: var(--font-editorial), 'Times New Roman', serif;
-  font-size: 2.2rem;
-  font-weight: 300;
-  font-style: italic;
-  color: var(--color-accent);
-  line-height: 1;
-}
-
-.tilt-stat-sub {
-  font-size: 0.7rem;
-  color: rgba(200, 190, 170, 0.4);
-  margin-top: 0.25rem;
-  letter-spacing: 0.05em;
-}
-
-/* ── Responsive: mobile layout ──────────────────────────────── */
-@media (max-width: 768px) {
-  .panel-left {
-    width: 100%;
-    padding: 6rem 1.5rem 2rem;
+/* ── Mobile Overrides for responsive flow ── */
+@media (max-width: 900px) {
+  .nav-tagline {
+    display: none;
   }
-
   .site-nav {
-    padding: 1.5rem 2rem;
+    top: 1rem;
+    padding: 0.65rem 1.5rem;
+    width: 92%;
   }
-
   .floor-plan-svg {
-    left: 2rem;
+    position: relative;
+    bottom: auto;
+    right: auto;
+    margin: 2rem auto 0;
+    width: 160px;
+    display: block;
   }
-
   .progress-nav {
-    right: 1rem;
+    display: none;
   }
 }

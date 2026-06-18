@@ -4,100 +4,135 @@
  * Main page: assembles the scroll-snap container and maps over
  * the project data to render each ProjectSection.
  *
- * This is a Server Component (no "use client" directive) since it
- * just renders static markup. The interactive bits (ProjectSection,
- * ProgressNav) are Client Components and are imported here.
- *
- * Data is typed with the ProjectData interface from ProjectSection.
+ * It imports CinematicBackground to display the 3D scroll walkthrough
+ * behind the transparent editorial sections on desktop.
  */
 
 import ProjectSection, {
   type ProjectData,
 } from "@/components/ProjectSection";
 import ProgressNav from "@/components/ProgressNav";
+import CinematicBackground from "@/components/CinematicBackground";
 
 /* ══════════════════════════════════════════════════════════════
    PROJECT DATA
-   Each entry renders one 100vh snap section.
+   Each entry represents a "keyframe" or space in the single-home walk.
    imageSrc paths are relative to /public.
    ══════════════════════════════════════════════════════════════ */
 
 const projects: ProjectData[] = [
   {
     index: 1,
-    id: "living-penthouse",
+    id: "fall-line-house",
     category: "Living Spaces",
-    headline: "Steel City",
-    headlineAlt: "Penthouse",
+    headline: "Fall Line",
+    headlineAlt: "House",
     description:
-      "A Jamshedpur penthouse where the Dalma hills meet extreme luxury. Near-black textured walls frame amber-lit bespoke woodwork — industrial heritage, refined into restraint.",
+      "A cantilevered concrete masterpiece projecting over a forest waterfall. Frameless glass facade frames the wild landscape, bringing raw nature into a warm, amber-lit sanctuary.",
     stat: {
       label: "Project Area",
-      value: "4,800",
+      value: "5,200",
       suffix: "sq ft",
     },
-    location: "Jamshedpur, Jharkhand",
+    location: "Dalma Foothills, Jamshedpur",
     year: "2025",
-    imageSrc: "/hero_living_room.png",
+    imageSrc: "/hero_exterior.png",
     imageAlt:
-      "Luxury dark living room with warm amber backlit woodwork in a Jamshedpur penthouse",
+      "Cantilevered brutalist house exterior suspended over a waterfall in Jamshedpur",
   },
   {
     index: 2,
-    id: "material-study",
-    category: "Materials & Craft",
-    headline: "Concrete",
-    headlineAlt: "& Grain",
+    id: "the-hearth",
+    category: "Living Spaces",
+    headline: "The Hearth",
+    headlineAlt: "Living",
     description:
-      "The vocabulary of luxury lives in tactile contrast. Raw charcoal concrete meets the warmth of polished amber grain. Every surface chosen for how it feels, not just how it looks.",
+      "Inside the main cantilever. High-volume raw concrete ceilings frame a low-slung dark leather conversation pit, centered by an amber-lit fireplace that reflects off the deep forest shadows.",
     stat: {
-      label: "Material Variants",
-      value: "27",
-      suffix: "selected",
+      label: "Ceiling Height",
+      value: "4.2",
+      suffix: "m",
     },
-    location: "Material Library, ARKA Studio",
-    year: "2024–2025",
-    imageSrc: "/material_detail.png",
+    location: "Main Pavilion, Jamshedpur",
+    year: "2025",
+    imageSrc: "/hero_living_room.png",
     imageAlt:
-      "Macro photograph of dark charcoal concrete meeting polished amber wood grain",
+      "Minimalist brutalist living room with low-slung furniture and concrete ceilings",
   },
   {
     index: 3,
-    id: "flow-corridor",
-    category: "Architecture",
-    headline: "The Flow",
+    id: "the-gallery",
+    category: "Materials & Craft",
+    headline: "The Gallery",
     headlineAlt: "Corridor",
     description:
-      "A brutalist hallway that breathes. Floor-to-ceiling glass on one side; dark steel panels honoring Jamshedpur's foundry heritage on the other. Amber track lighting guides the journey.",
+      "A glass-walled corridor hovering directly above the rushing torrent. Here, steel pivot doors and polished dark concrete establish an uncompromising threshold between wild water and architectural order.",
     stat: {
-      label: "Linear Metres",
-      value: "38",
-      suffix: "m",
+      label: "Material Variants",
+      value: "9",
+      suffix: "selected",
     },
-    location: "Jubilee Park Estate, Jamshedpur",
-    year: "2024",
-    imageSrc: "/corridor_flow.png",
+    location: "Waterfall Deck, Jamshedpur",
+    year: "2025",
+    imageSrc: "/material_detail.png",
     imageAlt:
-      "Cinematic interior corridor with floor-to-ceiling glass and dark steel panels",
+      "Glass-walled corridor with raw concrete and steel doors overlooking a waterfall",
   },
   {
     index: 4,
-    id: "zen-water",
+    id: "the-threshold",
+    category: "Architecture",
+    headline: "The Threshold",
+    headlineAlt: "Transitions",
+    description:
+      "A hallway where opposites form a tense, luxury dialogue. The cold texture of sandblasted concrete meets the warm, glowing grain of aged timber paneling, guided by hidden amber light channels.",
+    stat: {
+      label: "Linear Metres",
+      value: "42",
+      suffix: "m",
+    },
+    location: "Main Gallery, Jamshedpur",
+    year: "2024–2025",
+    imageSrc: "/corridor_flow.png",
+    imageAlt:
+      "Brutalist interior hallway showing contrast between concrete and wood panels",
+  },
+  {
+    index: 5,
+    id: "timber-study",
+    category: "Zen Features",
+    headline: "Timber",
+    headlineAlt: "Study",
+    description:
+      "The private study room—a deep, sound-insulated sanctuary clad entirely in rich cedar wood, centering on a black slate zen water feature with glowing underwater amber ripples.",
+    stat: {
+      label: "Wood Type",
+      value: "Aged Cedar",
+    },
+    location: "Private Suite, Jamshedpur",
+    year: "2025",
+    imageSrc: "/zen_water_feature.png",
+    imageAlt:
+      "Private library study with timber walls and a black slate zen water feature",
+  },
+  {
+    index: 6,
+    id: "still-waters",
     category: "Zen Features",
     headline: "Still",
     headlineAlt: "Waters",
     description:
-      "Where sound becomes silence. A black slate water feature with amber-lit ripples transforms a private residence into a sanctuary. Heavy. Expensive. Tranquil.",
+      "A close-up look at where sound becomes silence. A black slate water basin with custom underwater amber-lit ripples transforms the study into a meditative space. Brutalist. Expensive. Tranquil.",
     stat: {
       label: "Feature Weight",
-      value: "2.4",
+      value: "1.8",
       suffix: "tonnes",
     },
-    location: "Sonari Enclave, Jamshedpur",
+    location: "Private Suite, Jamshedpur",
     year: "2025",
     imageSrc: "/zen_water_feature.png",
     imageAlt:
-      "Luxury interior water feature with black slate and warm amber underwater lighting",
+      "Macro close-up details of warm amber ripples on a black slate zen water basin",
   },
 ];
 
@@ -120,13 +155,15 @@ export default function HomePage() {
         </p>
         <a
           href="mailto:studio@arkainteriors.in"
-          className="editorial-overline"
-          style={{ textDecoration: "none" }}
+          className="nav-enquire"
           aria-label="Contact ARKA Interiors"
         >
           Enquire
         </a>
       </header>
+
+      {/* ── Fixed 3D Cinematic Background Stack ──────────────── */}
+      <CinematicBackground />
 
       {/* ── Scroll-Snap Main Container ───────────────────────── */}
       <main
