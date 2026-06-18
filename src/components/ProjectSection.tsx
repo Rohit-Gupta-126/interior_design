@@ -23,8 +23,9 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useCallback } from "react";
-import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
+import { useRef, useEffect, useState, useCallback } from "react";
+// useIntersectionObserver is inlined below via useEffect to avoid
+// the React Compiler restriction on mutating hook-returned refs.
 import { useParallax } from "@/hooks/useParallax";
 import FloorPlanSVG from "@/components/FloorPlanSVG";
 
@@ -92,36 +93,30 @@ export default function ProjectSection({
   project,
   sectionIndex,
 }: ProjectSectionProps) {
-  /* Ref for the section — drives both IntersectionObserver and useParallax */
+  /* Single ref shared by both useParallax and the IntersectionObserver below */
   const sectionRef = useRef<HTMLElement>(null);
 
-  /* Observe the whole section — triggers text fade-up animations */
-  const { ref: intersectRef, isVisible } = useIntersectionObserver<HTMLElement>(
-    {
-      threshold: 0.25,
-      keepObserving: false,
-    }
-  );
+  /* Visibility state — drives the entrance fade-up animations.
+     Inlined here (not via useIntersectionObserver) so that sectionRef
+     can be used directly without the React Compiler rejecting a
+     cross-hook ref mutation. */
+  const [isVisible, setIsVisible] = useState(false);
 
-  /**
-   * Merge both refs onto the <section> element.
-   * intersectRef is a callback ref from useIntersectionObserver;
-   * sectionRef is a plain useRef for useParallax's DOM measurements.
-   */
-  const setRefs = useCallback(
-    (node: HTMLElement | null) => {
-      // Apply the IntersectionObserver callback ref
-      if (typeof intersectRef === "function") {
-        intersectRef(node);
-      } else if (intersectRef) {
-        (intersectRef as React.MutableRefObject<HTMLElement | null>).current =
-          node;
-      }
-      // Apply the plain ref for parallax
-      (sectionRef as React.MutableRefObject<HTMLElement | null>).current = node;
-    },
-    [intersectRef]
-  );
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect(); // one-shot entrance
+        }
+      },
+      { threshold: 0.25 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   /* Parallax offset — drives GPU translateY on the background image.
      Speed 0.15 → subtle luxury drift. Increase for more drama. */
@@ -151,7 +146,7 @@ export default function ProjectSection({
 
   return (
     <section
-      ref={setRefs}
+      ref={sectionRef}
       id={project.id}
       className="snap-section"
       aria-label={`Project ${indexStr}: ${project.headline}`}
