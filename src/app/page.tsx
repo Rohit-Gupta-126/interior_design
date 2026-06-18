@@ -1,65 +1,151 @@
-import Image from "next/image";
+/**
+ * app/page.tsx
+ *
+ * Main page: assembles the scroll-snap container and maps over
+ * the project data to render each ProjectSection.
+ *
+ * This is a Server Component (no "use client" directive) since it
+ * just renders static markup. The interactive bits (ProjectSection,
+ * ProgressNav) are Client Components and are imported here.
+ *
+ * Data is typed with the ProjectData interface from ProjectSection.
+ */
 
-export default function Home() {
+import ProjectSection, {
+  type ProjectData,
+} from "@/components/ProjectSection";
+import ProgressNav from "@/components/ProgressNav";
+
+/* ══════════════════════════════════════════════════════════════
+   PROJECT DATA
+   Each entry renders one 100vh snap section.
+   imageSrc paths are relative to /public.
+   ══════════════════════════════════════════════════════════════ */
+
+const projects: ProjectData[] = [
+  {
+    index: 1,
+    id: "living-penthouse",
+    category: "Living Spaces",
+    headline: "Steel City",
+    headlineAlt: "Penthouse",
+    description:
+      "A Jamshedpur penthouse where the Dalma hills meet extreme luxury. Near-black textured walls frame amber-lit bespoke woodwork — industrial heritage, refined into restraint.",
+    stat: {
+      label: "Project Area",
+      value: "4,800",
+      suffix: "sq ft",
+    },
+    location: "Jamshedpur, Jharkhand",
+    year: "2025",
+    imageSrc: "/hero_living_room.png",
+    imageAlt:
+      "Luxury dark living room with warm amber backlit woodwork in a Jamshedpur penthouse",
+  },
+  {
+    index: 2,
+    id: "material-study",
+    category: "Materials & Craft",
+    headline: "Concrete",
+    headlineAlt: "& Grain",
+    description:
+      "The vocabulary of luxury lives in tactile contrast. Raw charcoal concrete meets the warmth of polished amber grain. Every surface chosen for how it feels, not just how it looks.",
+    stat: {
+      label: "Material Variants",
+      value: "27",
+      suffix: "selected",
+    },
+    location: "Material Library, ARKA Studio",
+    year: "2024–2025",
+    imageSrc: "/material_detail.png",
+    imageAlt:
+      "Macro photograph of dark charcoal concrete meeting polished amber wood grain",
+  },
+  {
+    index: 3,
+    id: "flow-corridor",
+    category: "Architecture",
+    headline: "The Flow",
+    headlineAlt: "Corridor",
+    description:
+      "A brutalist hallway that breathes. Floor-to-ceiling glass on one side; dark steel panels honoring Jamshedpur's foundry heritage on the other. Amber track lighting guides the journey.",
+    stat: {
+      label: "Linear Metres",
+      value: "38",
+      suffix: "m",
+    },
+    location: "Jubilee Park Estate, Jamshedpur",
+    year: "2024",
+    imageSrc: "/corridor_flow.png",
+    imageAlt:
+      "Cinematic interior corridor with floor-to-ceiling glass and dark steel panels",
+  },
+  {
+    index: 4,
+    id: "zen-water",
+    category: "Zen Features",
+    headline: "Still",
+    headlineAlt: "Waters",
+    description:
+      "Where sound becomes silence. A black slate water feature with amber-lit ripples transforms a private residence into a sanctuary. Heavy. Expensive. Tranquil.",
+    stat: {
+      label: "Feature Weight",
+      value: "2.4",
+      suffix: "tonnes",
+    },
+    location: "Sonari Enclave, Jamshedpur",
+    year: "2025",
+    imageSrc: "/zen_water_feature.png",
+    imageAlt:
+      "Luxury interior water feature with black slate and warm amber underwater lighting",
+  },
+];
+
+/* ══════════════════════════════════════════════════════════════
+   PAGE COMPONENT
+   ══════════════════════════════════════════════════════════════ */
+
+export default function HomePage() {
+  const sectionIds = projects.map((p) => p.id);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <>
+      {/* ── Fixed Navigation Header ──────────────────────────── */}
+      <header className="site-nav" role="banner">
+        <div className="nav-logo">
+          ARK<span>A</span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+        <p className="nav-tagline">
+          Luxury Interiors &nbsp;·&nbsp; Jamshedpur, India
+        </p>
+        <a
+          href="mailto:studio@arkainteriors.in"
+          className="editorial-overline"
+          style={{ textDecoration: "none" }}
+          aria-label="Contact ARKA Interiors"
+        >
+          Enquire
+        </a>
+      </header>
+
+      {/* ── Scroll-Snap Main Container ───────────────────────── */}
+      <main
+        id="snap-container"
+        className="snap-container"
+        role="main"
+        aria-label="Portfolio of luxury interior projects"
+      >
+        {projects.map((project, i) => (
+          <ProjectSection
+            key={project.id}
+            project={project}
+            sectionIndex={i}
+          />
+        ))}
       </main>
-    </div>
+
+      {/* ── Fixed Side Progress Navigation ───────────────────── */}
+      <ProgressNav sectionIds={sectionIds} />
+    </>
   );
 }

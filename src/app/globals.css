@@ -1,26 +1,432 @@
+/* ============================================================
+   GLOBALS.CSS
+   Tailwind v4 import + custom CSS for scroll-snap, SVG stroke
+   animation, fade-ins, and the overall dark luxury design system.
+   ============================================================ */
+
 @import "tailwindcss";
 
+/* ── Design Tokens ─────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-bg:       #0a0a0a;   /* near-black canvas */
+  --color-accent:   #d4af37;   /* warm amber */
+  --color-accent-dim: #a07c20; /* dimmed amber for secondary text */
+  --color-surface:  #111111;   /* slightly lifted surface */
+  --color-border:   rgba(212, 175, 55, 0.15);
+
+  /* Typography custom properties */
+  --font-editorial: var(--font-cormorant);  /* Cormorant Garamond */
+  --font-ui:        var(--font-dm-sans);    /* DM Sans */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ── Reset & Base ───────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background-color: var(--color-bg);
+  color: #e8e0d0;
+  font-family: var(--font-ui), system-ui, sans-serif;
+  /* Disable default browser scroll behaviour so our snap container controls it */
+  overflow: hidden;
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--color-bg);
+}
+
+/* ── Scrollbar Styling ──────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 2px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-accent);
+  border-radius: 2px;
+}
+
+/* ── Scroll-Snap Container ──────────────────────────────────── */
+.snap-container {
+  height: 100vh;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+  /* Performance hint: promote to its own layer */
+  will-change: scroll-position;
+  /* Hide scrollbar while keeping functionality */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-accent) transparent;
+}
+
+/* ── Individual Snap Sections ───────────────────────────────── */
+.snap-section {
+  scroll-snap-align: start;
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── Left Editorial Panel ───────────────────────────────────── */
+.panel-left {
+  width: 50%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4rem 4rem 4rem 5rem;
+  position: relative;
+  z-index: 10;
+  /* Subtle left-edge gradient to separate from right panel */
+  background: linear-gradient(
+    to right,
+    rgba(10, 10, 10, 1) 60%,
+    rgba(10, 10, 10, 0.85) 100%
+  );
+}
+
+/* ── Right Image Panel ──────────────────────────────────────── */
+.panel-right {
+  width: 50%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Fade-In Animation (IntersectionObserver triggered) ─────── */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Elements with .animate-hidden start invisible */
+.animate-hidden {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: none;
+}
+
+/* When JS adds .animate-visible, trigger the entrance */
+.animate-visible {
+  animation: fadeUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Staggered delays for child elements */
+.animate-delay-1 { animation-delay: 0.1s; }
+.animate-delay-2 { animation-delay: 0.25s; }
+.animate-delay-3 { animation-delay: 0.4s; }
+.animate-delay-4 { animation-delay: 0.55s; }
+.animate-delay-5 { animation-delay: 0.7s; }
+
+/* Image fade-in (no vertical movement) */
+.img-hidden {
+  opacity: 0;
+  transition: opacity 1.1s ease;
+}
+.img-visible {
+  opacity: 1;
+}
+
+/* ── SVG Floor Plan Drawing Animation ───────────────────────── */
+.floor-plan-svg {
+  position: absolute;
+  bottom: 2.5rem;
+  left: 4rem;
+  width: 220px;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* The SVG path starts fully "invisible" (dashoffset = total length).
+   JS will add .draw-active to trigger the animation via CSS. */
+.floor-plan-svg .floor-path {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 1px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  /* Large dasharray to cover any path length */
+  stroke-dasharray: 1200;
+  stroke-dashoffset: 1200;
+  transition: none;
+}
+
+/* When .draw-active is applied by IntersectionObserver, animate */
+.floor-plan-svg.draw-active .floor-path {
+  animation: drawPath 2.2s cubic-bezier(0.4, 0, 0.2, 1) 0.4s forwards;
+}
+
+@keyframes drawPath {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ── Typography ─────────────────────────────────────────────── */
+.editorial-overline {
+  font-family: var(--font-ui), system-ui, sans-serif;
+  font-size: 0.68rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  font-weight: 400;
+}
+
+.editorial-headline {
+  font-family: var(--font-editorial), 'Times New Roman', serif;
+  font-size: clamp(3.5rem, 5.5vw, 5.5rem);
+  line-height: 0.92;
+  font-weight: 300;
+  font-style: italic;
+  color: #f0e8d8;
+  letter-spacing: -0.02em;
+}
+
+.editorial-subhead {
+  font-family: var(--font-editorial), 'Times New Roman', serif;
+  font-size: clamp(1.1rem, 1.8vw, 1.4rem);
+  line-height: 1.6;
+  font-weight: 300;
+  color: rgba(224, 210, 185, 0.7);
+  max-width: 36ch;
+}
+
+.editorial-body {
+  font-family: var(--font-ui), system-ui, sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.8;
+  color: rgba(200, 190, 170, 0.55);
+  letter-spacing: 0.02em;
+  max-width: 42ch;
+}
+
+/* ── Amber Divider Line ─────────────────────────────────────── */
+.amber-rule {
+  width: 3rem;
+  height: 1px;
+  background: var(--color-accent);
+  margin: 1.5rem 0;
+}
+
+/* ── Project Index Badge ────────────────────────────────────── */
+.project-index {
+  font-family: var(--font-ui), system-ui, sans-serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  color: var(--color-accent-dim);
+  text-transform: uppercase;
+}
+
+/* ── Vertical Progress Indicator ────────────────────────────── */
+.progress-nav {
+  position: fixed;
+  right: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.progress-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(212, 175, 55, 0.25);
+  transition: all 0.4s ease;
+  cursor: pointer;
+}
+
+.progress-dot.active {
+  background: var(--color-accent);
+  height: 20px;
+  border-radius: 2px;
+}
+
+/* ── Navigation Header ──────────────────────────────────────── */
+.site-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  padding: 2rem 5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  /* Glassmorphism top bar */
+  background: linear-gradient(
+    to bottom,
+    rgba(10, 10, 10, 0.95) 0%,
+    rgba(10, 10, 10, 0) 100%
+  );
+}
+
+.nav-logo {
+  font-family: var(--font-editorial), 'Times New Roman', serif;
+  font-size: 1.3rem;
+  font-style: italic;
+  letter-spacing: 0.05em;
+  color: #f0e8d8;
+}
+
+.nav-logo span {
+  color: var(--color-accent);
+}
+
+.nav-tagline {
+  font-family: var(--font-ui), system-ui, sans-serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(200, 185, 155, 0.5);
+}
+
+/* ── Tilt Card Container ────────────────────────────────────── */
+.tilt-card {
+  border: 1px solid var(--color-border);
+  background: rgba(20, 18, 14, 0.6);
+  backdrop-filter: blur(8px);
+  padding: 1.5rem 2rem;
+  margin-top: 2rem;
+  transform-style: preserve-3d;
+  perspective: 800px;
+  will-change: transform;
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+  cursor: default;
+  max-width: 360px;
+}
+
+.tilt-card:hover {
+  box-shadow: 0 20px 60px rgba(212, 175, 55, 0.08);
+}
+
+.tilt-card-content {
+  transform: translateZ(12px);
+  transform-style: preserve-3d;
+}
+
+.tilt-stat-label {
+  font-size: 0.62rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--color-accent-dim);
+  margin-bottom: 0.25rem;
+}
+
+.tilt-stat-value {
+  font-family: var(--font-editorial), 'Times New Roman', serif;
+  font-size: 2.2rem;
+  font-weight: 300;
+  font-style: italic;
+  color: var(--color-accent);
+  line-height: 1;
+}
+
+.tilt-stat-sub {
+  font-size: 0.7rem;
+  color: rgba(200, 190, 170, 0.4);
+  margin-top: 0.25rem;
+  letter-spacing: 0.05em;
+}
+
+/* ── Right-panel image overlay gradient ─────────────────────── */
+.img-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    rgba(10, 10, 10, 0.45) 0%,
+    transparent 40%
+  );
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* ── Shimmer Loader (while image loads) ─────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.img-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    #111 25%,
+    #1a1810 50%,
+    #111 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+  z-index: 1;
+  transition: opacity 0.6s ease;
+}
+
+.img-shimmer.loaded {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Responsive: collapse to stacked on mobile ──────────────── */
+@media (max-width: 768px) {
+  .snap-section {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    scroll-snap-align: start;
+  }
+
+  .panel-left,
+  .panel-right {
+    width: 100%;
+  }
+
+  .panel-left {
+    padding: 6rem 2rem 2rem;
+    background: var(--color-bg);
+    order: 2;
+  }
+
+  .panel-right {
+    height: 55vh;
+    order: 1;
+  }
+
+  .site-nav {
+    padding: 1.5rem 2rem;
+  }
+
+  .floor-plan-svg {
+    left: 2rem;
+  }
+
+  .progress-nav {
+    right: 1rem;
+  }
 }
