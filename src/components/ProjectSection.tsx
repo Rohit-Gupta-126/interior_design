@@ -1,22 +1,21 @@
 /**
  * components/ProjectSection.tsx
  *
- * A single 100vh snap section.
+ * A single 100vh cinematic snap section.
  *
- * NEW LAYOUT (PROMPT v2):
+ * LAYERING HIERARCHY (per PROMPT v3):
  * ─────────────────────────────────────────────────────────────────
- * The full-bleed 16:9 landscape image now fills the ENTIRE section
- * as a fixed background layer. The editorial content (left-side
- * typography, tilt card, floor plan SVG) floats above a gradient
- * overlay that keeps the dark luxury aesthetic.
+ * Parent:  className="relative w-full h-screen overflow-hidden snap-section"
+ * Layer 1: Image   — absolute inset-0 w-full h-full -z-20   (back)
+ * Layer 2: Gradient — absolute inset-0 bg-gradient-to-r … -z-10
+ * Layer 3: Content — relative z-10 flex flex-col justify-center h-full w-[50vw] px-12
  *
  * PARALLAX:
- * The background image is scaled to scale-[1.15] giving it breathing
- * room, then driven by useParallax via translate3d → pure GPU path.
+ * Image is scale-[1.15] and driven by useParallax via translate3d — pure GPU.
  *
  * INTERACTIVITY:
- * - useIntersectionObserver: text entrance fade-up animations
- * - useParallax: scroll-linked image Y translation (rAF, passive)
+ * - IntersectionObserver (inline useEffect): text entrance fade-up
+ * - useParallax: rAF-based scroll-linked image Y offset
  * - Mouse tilt: vanilla 3D card tilt on the stats card (no WebGL)
  */
 
@@ -24,8 +23,6 @@
 
 import Image from "next/image";
 import { useRef, useEffect, useState, useCallback } from "react";
-// useIntersectionObserver is inlined below via useEffect to avoid
-// the React Compiler restriction on mutating hook-returned refs.
 import { useParallax } from "@/hooks/useParallax";
 import FloorPlanSVG from "@/components/FloorPlanSVG";
 
@@ -54,7 +51,7 @@ export interface ProjectData {
   location: string;
   /** Year of project */
   year: string;
-  /** Path to the full-bleed background image (relative to /public) */
+  /** Path to the full-bleed background image (relative to /public, e.g. "/hero_living_room.png") */
   imageSrc: string;
   /** Accessible alt text for the image */
   imageAlt: string;
@@ -64,7 +61,7 @@ export interface ProjectData {
 
 interface ProjectSectionProps {
   project: ProjectData;
-  /** Index in the projects array — used for stagger timing etc. */
+  /** Index in the projects array — used for stagger timing and eager-load logic */
   sectionIndex: number;
 }
 
@@ -93,13 +90,12 @@ export default function ProjectSection({
   project,
   sectionIndex,
 }: ProjectSectionProps) {
-  /* Single ref shared by both useParallax and the IntersectionObserver below */
+  /* Single ref — drives both useParallax and the IntersectionObserver */
   const sectionRef = useRef<HTMLElement>(null);
 
-  /* Visibility state — drives the entrance fade-up animations.
-     Inlined here (not via useIntersectionObserver) so that sectionRef
-     can be used directly without the React Compiler rejecting a
-     cross-hook ref mutation. */
+  /* Visibility state drives the entrance fade-up stagger animations.
+     Inlined via useEffect (not from a hook) so React Compiler never
+     sees a cross-hook ref mutation. */
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -109,7 +105,7 @@ export default function ProjectSection({
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
-          observer.disconnect(); // one-shot entrance
+          observer.disconnect(); // one-shot: fire once, never re-run
         }
       },
       { threshold: 0.25 }
@@ -118,14 +114,14 @@ export default function ProjectSection({
     return () => observer.disconnect();
   }, []);
 
-  /* Parallax offset — drives GPU translateY on the background image.
-     Speed 0.15 → subtle luxury drift. Increase for more drama. */
+  /* Parallax offset applied to the background image via translate3d.
+     Speed 0.15 is the luxury sweet spot — subtle, not jarring. */
   const yOffset = useParallax(sectionRef, 0.15);
 
   /* Ref for the tilt card DOM element */
   const tiltRef = useRef<HTMLDivElement>(null);
 
-  /* Mouse move: apply 3D tilt */
+  /* Mouse move: calculate and apply 3D tilt to stats card */
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       if (!tiltRef.current) return;
@@ -134,79 +130,66 @@ export default function ProjectSection({
     []
   );
 
-  /* Mouse leave: reset tilt */
+  /* Mouse leave: reset tilt smoothly */
   const handleMouseLeave = useCallback(() => {
     if (!tiltRef.current) return;
     tiltRef.current.style.transform =
       "perspective(800px) rotateX(0deg) rotateY(0deg) scale(1)";
   }, []);
 
-  /* Build the zero-padded index string "01", "02", ... */
   const indexStr = String(project.index).padStart(2, "0");
 
   return (
+    /* ── PARENT CONTAINER ────────────────────────────────────────
+       Exactly as specified: relative, full viewport, overflow hidden,
+       plus snap-section for the CSS scroll-snap alignment.
+       ────────────────────────────────────────────────────────── */
     <section
       ref={sectionRef}
       id={project.id}
-      className="snap-section"
+      className="relative w-full h-screen overflow-hidden snap-section"
       aria-label={`Project ${indexStr}: ${project.headline}`}
     >
-      {/* ═══════════════════════════════════════════════════════
-          LAYER 0 — Full-bleed Background Image (GPU Parallax)
-          ══════════════════════════════════════════════════════ */}
-      <div className="absolute inset-0 -z-20 overflow-hidden">
-        {/*
-          scale-[1.15]: gives the image 15% extra physical space so
-          translate3d can move it up/down without ever revealing a
-          transparent edge. transform-gpu forces compositor-only paint.
-        */}
+      {/* ── LAYER 1: Full-bleed Background Image ─────────────────
+          Pinned to the very back with -z-20.
+          scale-[1.15] gives parallax room to translate without edge bleed.
+          transform-gpu promotes to compositor — no layout/paint cost.
+          ──────────────────────────────────────────────────────── */}
+      <div className="absolute inset-0 w-full h-full -z-20 overflow-hidden">
         <Image
           src={project.imageSrc}
           alt={project.imageAlt}
           fill
           sizes="100vw"
           quality={85}
+          /*
+           * Next.js 16: use `loading` + `preload` (not `priority`).
+           * First section gets eager load + preload for LCP optimisation.
+           */
           loading={sectionIndex === 0 ? "eager" : "lazy"}
           preload={sectionIndex === 0}
-          className="object-cover object-center scale-[1.15] origin-center transform-gpu"
+          className="object-cover object-center transform-gpu"
           style={{
-            /* translate3d keeps the transform on the GPU compositor thread.
-               No layout recalculation, no repaints — pure 60fps. */
+            /* translate3d: stays on the GPU compositor thread entirely.
+               scale(1.15) is duplicated here so it composes with the
+               translateY without the className scale being overridden. */
             transform: `translate3d(0, ${yOffset}px, 0) scale(1.15)`,
+            transformOrigin: "center center",
           }}
         />
       </div>
 
-      {/* ═══════════════════════════════════════════════════════
-          LAYER 1 — Gradient Overlays
-          Left-to-right dark gradient keeps editorial text legible.
-          Bottom vignette grounds the composition.
-          ══════════════════════════════════════════════════════ */}
-      <div
-        className="absolute inset-0 -z-10"
-        style={{
-          background: `
-            linear-gradient(
-              to right,
-              rgba(10,10,10,0.96) 0%,
-              rgba(10,10,10,0.85) 30%,
-              rgba(10,10,10,0.45) 55%,
-              rgba(10,10,10,0.10) 75%,
-              transparent 100%
-            ),
-            linear-gradient(
-              to top,
-              rgba(10,10,10,0.6) 0%,
-              transparent 40%
-            )
-          `,
-        }}
-      />
+      {/* ── LAYER 2: Gradient Overlay ─────────────────────────────
+          Left-heavy dark gradient keeps editorial text legible
+          against any image content. -z-10 sits above the image.
+          ──────────────────────────────────────────────────────── */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent -z-10" />
 
-      {/* ═══════════════════════════════════════════════════════
-          LAYER 2 — Editorial Content (Left Side, 50% wide)
-          ══════════════════════════════════════════════════════ */}
-      <div className="panel-left">
+      {/* ── LAYER 3: Editorial Content ────────────────────────────
+          Relative z-10 sits above both image and gradient overlay.
+          w-[50vw]: content occupies exactly the left half of the viewport.
+          ──────────────────────────────────────────────────────── */}
+      <div className="relative z-10 flex flex-col justify-center h-full w-[50vw] px-12">
 
         {/* Project index + category overline */}
         <div
@@ -293,15 +276,13 @@ export default function ProjectSection({
                 </span>
               )}
             </p>
-            <p className="tilt-stat-sub">
-              Hover to experience the depth
-            </p>
+            <p className="tilt-stat-sub">Hover to experience the depth</p>
           </div>
         </div>
 
         {/* ── Animated SVG Floor Plan ───────────────────────
-            The FloorPlanSVG component handles its own
-            IntersectionObserver internally.
+            Positioned absolutely at the bottom of this column.
+            FloorPlanSVG manages its own IntersectionObserver.
             ─────────────────────────────────────────────── */}
         <FloorPlanSVG />
       </div>
