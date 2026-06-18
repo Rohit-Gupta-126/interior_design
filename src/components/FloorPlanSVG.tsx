@@ -42,13 +42,7 @@ export default function FloorPlanSVG({ className = "" }: FloorPlanSVGProps) {
       {/* Outer perimeter */}
       <path
         className="floor-path"
-        d="
-          M 10 10
-          L 210 10
-          L 210 150
-          L 10 150
-          Z
-        "
+        d="M 10 10 L 210 10 L 210 150 L 10 150 Z"
       />
 
       {/* Interior dividing wall (horizontal) */}
