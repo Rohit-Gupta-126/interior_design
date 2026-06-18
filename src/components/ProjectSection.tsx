@@ -1,13 +1,23 @@
 /**
  * components/ProjectSection.tsx
  *
- * A single 100vh snap section with a strict 50/50 split layout.
- * LEFT:  Sticky editorial panel — project details, tilt card, SVG floor plan.
- * RIGHT: Full-bleed, edge-to-edge photography panel.
+ * A single 100vh snap section.
  *
- * Entrance animations are driven by useIntersectionObserver.
- * 3D parallax tilt on the stats card is implemented via a custom
- * mousemove handler (no external library, no WebGL).
+ * NEW LAYOUT (PROMPT v2):
+ * ─────────────────────────────────────────────────────────────────
+ * The full-bleed 16:9 landscape image now fills the ENTIRE section
+ * as a fixed background layer. The editorial content (left-side
+ * typography, tilt card, floor plan SVG) floats above a gradient
+ * overlay that keeps the dark luxury aesthetic.
+ *
+ * PARALLAX:
+ * The background image is scaled to scale-[1.15] giving it breathing
+ * room, then driven by useParallax via translate3d → pure GPU path.
+ *
+ * INTERACTIVITY:
+ * - useIntersectionObserver: text entrance fade-up animations
+ * - useParallax: scroll-linked image Y translation (rAF, passive)
+ * - Mouse tilt: vanilla 3D card tilt on the stats card (no WebGL)
  */
 
 "use client";
@@ -15,6 +25,7 @@
 import Image from "next/image";
 import { useRef, useCallback } from "react";
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
+import { useParallax } from "@/hooks/useParallax";
 import FloorPlanSVG from "@/components/FloorPlanSVG";
 
 /* ── Prop Types ─────────────────────────────────────────────── */
@@ -42,7 +53,7 @@ export interface ProjectData {
   location: string;
   /** Year of project */
   year: string;
-  /** Path to the right-panel image (relative to /public) */
+  /** Path to the full-bleed background image (relative to /public) */
   imageSrc: string;
   /** Accessible alt text for the image */
   imageAlt: string;
@@ -81,18 +92,40 @@ export default function ProjectSection({
   project,
   sectionIndex,
 }: ProjectSectionProps) {
-  /* Observe the whole section — triggers text fade-up animations */
-  const { ref: sectionRef, isVisible } = useIntersectionObserver<HTMLElement>({
-    threshold: 0.25,
-    keepObserving: false,
-  });
+  /* Ref for the section — drives both IntersectionObserver and useParallax */
+  const sectionRef = useRef<HTMLElement>(null);
 
-  /* Observe the right panel — triggers image fade-in */
-  const { ref: imgRef, isVisible: imgVisible } =
-    useIntersectionObserver<HTMLDivElement>({
-      threshold: 0.1,
+  /* Observe the whole section — triggers text fade-up animations */
+  const { ref: intersectRef, isVisible } = useIntersectionObserver<HTMLElement>(
+    {
+      threshold: 0.25,
       keepObserving: false,
-    });
+    }
+  );
+
+  /**
+   * Merge both refs onto the <section> element.
+   * intersectRef is a callback ref from useIntersectionObserver;
+   * sectionRef is a plain useRef for useParallax's DOM measurements.
+   */
+  const setRefs = useCallback(
+    (node: HTMLElement | null) => {
+      // Apply the IntersectionObserver callback ref
+      if (typeof intersectRef === "function") {
+        intersectRef(node);
+      } else if (intersectRef) {
+        (intersectRef as React.MutableRefObject<HTMLElement | null>).current =
+          node;
+      }
+      // Apply the plain ref for parallax
+      (sectionRef as React.MutableRefObject<HTMLElement | null>).current = node;
+    },
+    [intersectRef]
+  );
+
+  /* Parallax offset — drives GPU translateY on the background image.
+     Speed 0.15 → subtle luxury drift. Increase for more drama. */
+  const yOffset = useParallax(sectionRef, 0.15);
 
   /* Ref for the tilt card DOM element */
   const tiltRef = useRef<HTMLDivElement>(null);
@@ -118,14 +151,66 @@ export default function ProjectSection({
 
   return (
     <section
-      ref={sectionRef}
+      ref={setRefs}
       id={project.id}
       className="snap-section"
       aria-label={`Project ${indexStr}: ${project.headline}`}
     >
-      {/* ═══════════════════════════════════
-          LEFT PANEL — Editorial Content
-          ═══════════════════════════════════ */}
+      {/* ═══════════════════════════════════════════════════════
+          LAYER 0 — Full-bleed Background Image (GPU Parallax)
+          ══════════════════════════════════════════════════════ */}
+      <div className="absolute inset-0 -z-20 overflow-hidden">
+        {/*
+          scale-[1.15]: gives the image 15% extra physical space so
+          translate3d can move it up/down without ever revealing a
+          transparent edge. transform-gpu forces compositor-only paint.
+        */}
+        <Image
+          src={project.imageSrc}
+          alt={project.imageAlt}
+          fill
+          sizes="100vw"
+          quality={85}
+          loading={sectionIndex === 0 ? "eager" : "lazy"}
+          preload={sectionIndex === 0}
+          className="object-cover object-center scale-[1.15] origin-center transform-gpu"
+          style={{
+            /* translate3d keeps the transform on the GPU compositor thread.
+               No layout recalculation, no repaints — pure 60fps. */
+            transform: `translate3d(0, ${yOffset}px, 0) scale(1.15)`,
+          }}
+        />
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════
+          LAYER 1 — Gradient Overlays
+          Left-to-right dark gradient keeps editorial text legible.
+          Bottom vignette grounds the composition.
+          ══════════════════════════════════════════════════════ */}
+      <div
+        className="absolute inset-0 -z-10"
+        style={{
+          background: `
+            linear-gradient(
+              to right,
+              rgba(10,10,10,0.96) 0%,
+              rgba(10,10,10,0.85) 30%,
+              rgba(10,10,10,0.45) 55%,
+              rgba(10,10,10,0.10) 75%,
+              transparent 100%
+            ),
+            linear-gradient(
+              to top,
+              rgba(10,10,10,0.6) 0%,
+              transparent 40%
+            )
+          `,
+        }}
+      />
+
+      {/* ═══════════════════════════════════════════════════════
+          LAYER 2 — Editorial Content (Left Side, 50% wide)
+          ══════════════════════════════════════════════════════ */}
       <div className="panel-left">
 
         {/* Project index + category overline */}
@@ -184,7 +269,7 @@ export default function ProjectSection({
           }`}
           style={{ marginTop: "1.2rem" }}
         >
-          {project.location} &nbsp;·&nbsp; {project.year}
+          {project.location}&nbsp;·&nbsp; {project.year}
         </p>
 
         {/* ── Tilt Stats Card ──────────────────────────────── */}
@@ -220,48 +305,10 @@ export default function ProjectSection({
         </div>
 
         {/* ── Animated SVG Floor Plan ───────────────────────
-            Positioned absolutely at the bottom of the panel.
             The FloorPlanSVG component handles its own
             IntersectionObserver internally.
             ─────────────────────────────────────────────── */}
         <FloorPlanSVG />
-      </div>
-
-      {/* ═══════════════════════════════════
-          RIGHT PANEL — Full-bleed Photo
-          ═══════════════════════════════════ */}
-      <div
-        ref={imgRef}
-        className="panel-right"
-        aria-hidden="true"
-      >
-        {/* Shimmer placeholder while image loads */}
-        <div
-          className={`img-shimmer ${imgVisible ? "loaded" : ""}`}
-        />
-
-        {/* Gradient overlay from right edge to allow left text bleed */}
-        <div className="img-overlay" />
-
-        {/*
-          Next.js <Image> with fill prop:
-          - Parent must be position:relative (set in .panel-right CSS)
-          - object-fit:cover ensures full bleed without distortion
-          - sizes hints 50vw since this panel is half the viewport
-          - loading="eager" for the HERO (section 0), lazy for others
-          - preload={true} only for the first image (LCP element)
-        */}
-        <Image
-          src={project.imageSrc}
-          alt={project.imageAlt}
-          fill
-          style={{ objectFit: "cover", objectPosition: "center" }}
-          sizes="50vw"
-          quality={85}
-          loading={sectionIndex === 0 ? "eager" : "lazy"}
-          preload={sectionIndex === 0}
-          className={`img-hidden ${imgVisible ? "img-visible" : ""}`}
-        />
       </div>
     </section>
   );
