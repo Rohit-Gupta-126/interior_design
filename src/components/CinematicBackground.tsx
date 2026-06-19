@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 
 interface CameraConfig {
   src: string;
@@ -89,16 +89,6 @@ export default function CinematicBackground() {
   const leftScrimsRef = useRef<(HTMLDivElement | null)[]>([]);
   const rightScrimsRef = useRef<(HTMLDivElement | null)[]>([]);
 
-  // Scroll-driven lazy loading of images
-  const [loadedIndices, setLoadedIndices] = useState<boolean[]>([
-    true,
-    false,
-    false,
-    false,
-    false,
-    false,
-  ]);
-
   // Animation values interpolation for steadycam feeling
   const targetP = useRef(0);
   const currentP = useRef(0);
@@ -156,11 +146,11 @@ export default function CinematicBackground() {
         const mx = currentMx.current;
         const my = currentMy.current;
 
-        // Camera tilt offsets (max 35px translation, 4deg rotation)
-        const txMouse = mx * -35;
-        const tyMouse = my * -35;
-        const rxMouse = my * 4.0;
-        const ryMouse = mx * -4.0;
+        // Expanded camera tilt offsets (max 45px translation, 6.5deg rotation for deep 3D feel)
+        const txMouse = mx * -45;
+        const tyMouse = my * -45;
+        const rxMouse = my * 6.5;
+        const ryMouse = mx * -6.5;
 
         // Scrim blending based on active layout
         const sectionInt = Math.floor(p);
@@ -176,7 +166,7 @@ export default function CinematicBackground() {
           const photo = photosRef.current[i];
           const leftScrim = leftScrimsRef.current[i];
           const rightScrim = rightScrimsRef.current[i];
-          if (!wrap) continue;
+          if (!wrap || !photo) continue;
 
           let scale = 1.0;
           let tx = 0;
@@ -220,7 +210,13 @@ export default function CinematicBackground() {
           wrap.style.opacity = String(opacity);
           wrap.style.pointerEvents = opacity > 0.15 ? "auto" : "none";
 
-          if (opacity > 0 && photo) {
+          if (opacity > 0) {
+            // Instant DOM-based lazy loading without React render cycles
+            const targetSrc = CAMERA_CONFIGS[i].src;
+            if (photo.getAttribute("src") !== targetSrc) {
+              photo.setAttribute("src", targetSrc);
+            }
+
             photo.style.transform = `scale(${scale}) translate3d(calc(${tx}vw + ${txMouse}px), calc(${ty}vh + ${tyMouse}px), 0) rotateX(${rxMouse}deg) rotateY(${ryMouse}deg)`;
 
             if (leftScrim) leftScrim.style.opacity = String(leftScrimOpacity);
@@ -239,33 +235,22 @@ export default function CinematicBackground() {
     };
 
     const handleScroll = () => {
-      const scrollTop = snapContainer.scrollTop;
-      const progress = Math.max(0, Math.min(5.0, scrollTop / clientHeightRef.current));
+      const scrollTop = snapContainer.scrollTop || window.scrollY || document.documentElement.scrollTop || 0;
+      const clientHeight = snapContainer.clientHeight || window.innerHeight || 800;
+      const progress = Math.max(0, Math.min(5.0, scrollTop / (clientHeight || 1)));
       targetP.current = progress;
-
-      // Lazy load next image keys as the user approaches
-      setLoadedIndices((prev) => {
-        let changed = false;
-        const next = [...prev];
-        for (let i = 0; i < CAMERA_CONFIGS.length; i++) {
-          if (!next[i] && progress >= i - 1.2) {
-            next[i] = true;
-            changed = true;
-          }
-        }
-        return changed ? next : prev;
-      });
-
       startAnimationLoop();
     };
 
     const handleMouseMove = (e: MouseEvent) => {
-      targetMx.current = (e.clientX / window.innerWidth) - 0.5;
-      targetMy.current = (e.clientY / window.innerHeight) - 0.5;
+      // Scale mouse position to range -1.0 to 1.0 (doubled range for deep parallax effect)
+      targetMx.current = ((e.clientX / window.innerWidth) - 0.5) * 2;
+      targetMy.current = ((e.clientY / window.innerHeight) - 0.5) * 2;
       startAnimationLoop();
     };
 
     snapContainer.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("mousemove", handleMouseMove, { passive: true });
 
     handleScroll();
@@ -273,6 +258,7 @@ export default function CinematicBackground() {
     return () => {
       window.removeEventListener("resize", handleResize);
       snapContainer.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("mousemove", handleMouseMove);
     };
   }, []);
@@ -288,26 +274,24 @@ export default function CinematicBackground() {
           className="ps-image-wrap"
           style={{ zIndex: i }}
         >
-          {loadedIndices[i] && (
-            <img
-              ref={(el) => {
-                photosRef.current[i] = el;
-              }}
-              src={config.src}
-              alt={`Walkthrough space ${i + 1}`}
-              className="ps-photo"
-              style={{
-                position: "absolute",
-                top: "-15%",
-                left: "-15%",
-                width: "130%",
-                height: "130%",
-                objectFit: "cover",
-                objectPosition: "center",
-                transformOrigin: "center center",
-              }}
-            />
-          )}
+          <img
+            ref={(el) => {
+              photosRef.current[i] = el;
+            }}
+            src=""
+            alt={`Walkthrough space ${i + 1}`}
+            className="ps-photo"
+            style={{
+              position: "absolute",
+              top: "-15%",
+              left: "-15%",
+              width: "130%",
+              height: "130%",
+              objectFit: "cover",
+              objectPosition: "center",
+              transformOrigin: "center center",
+            }}
+          />
           <div
             ref={(el) => {
               leftScrimsRef.current[i] = el;
