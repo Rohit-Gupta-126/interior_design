@@ -13,14 +13,13 @@ interface CameraConfig {
 }
 
 // Spatially connected transitions mapping the drone walkthrough sequence:
-// Each camera configuration details the start state (coming from previous room)
-// and the end state (going to next room).
+// We use deep zooms (endScale of 3.5) and translations to fly through doorways.
 const CAMERA_CONFIGS: CameraConfig[] = [
   {
     // Exterior Facade (0)
     src: "/hero_exterior.png",
-    endScale: 1.45,
-    endTx: 8.0,
+    endScale: 3.5,
+    endTx: 22.0,    // Center the doorway to the left as we zoom in
     endTy: 2.0,
     startScale: 1.0,
     startTx: 0.0,
@@ -29,41 +28,41 @@ const CAMERA_CONFIGS: CameraConfig[] = [
   {
     // Entrance Threshold Pivot (1)
     src: "/hero_entrance.png",
-    endScale: 1.45,
-    endTx: -12.0,
+    endScale: 3.5,
+    endTx: -28.0,   // Center the hallway to the right as we zoom in
     endTy: 1.0,
     startScale: 0.77,
-    startTx: -8.0,
+    startTx: -22.0,
     startTy: -2.0,
   },
   {
     // Minimal Hallway Gallery (2)
     src: "/hero_hallway.png",
-    endScale: 1.45,
-    endTx: 0.0,
-    endTy: -2.0,
+    endScale: 3.5,
+    endTx: 0.0,     // Center zoom down the corridor
+    endTy: -6.0,
     startScale: 0.77,
-    startTx: 12.0,
-    startTy: -1.0,
+    startTx: 28.0,
+    startTy: 2.0,
   },
   {
     // Living Pavilion Hearth (3)
     src: "/hero_living_room.png",
-    endScale: 1.25,
-    endTx: -28.0,
+    endScale: 2.8,    // Lateral dolly pan to the kitchen
+    endTx: -60.0,
     endTy: 0.0,
     startScale: 0.77,
     startTx: 0.0,
-    startTy: 2.0,
+    startTy: 6.0,
   },
   {
     // Chef Kitchen Island (4)
     src: "/hero_kitchen.png",
-    endScale: 1.45,
-    endTx: 8.0,
+    endScale: 3.5,
+    endTx: 22.0,    // Zoom towards the bedroom threshold
     endTy: 1.0,
     startScale: 0.82,
-    startTx: 28.0,
+    startTx: 60.0,
     startTy: 0.0,
   },
   {
@@ -73,7 +72,7 @@ const CAMERA_CONFIGS: CameraConfig[] = [
     endTx: 0.0,
     endTy: 0.0,
     startScale: 0.77,
-    startTx: -8.0,
+    startTx: -22.0,
     startTy: -1.0,
   },
 ];
@@ -98,19 +97,11 @@ export default function CinematicBackground() {
   const currentMx = useRef(0);
   const currentMy = useRef(0);
 
-  const clientHeightRef = useRef(800);
   const isAnimating = useRef(false);
 
   useEffect(() => {
     const snapContainer = document.getElementById("snap-container");
     if (!snapContainer) return;
-
-    clientHeightRef.current = snapContainer.clientHeight || window.innerHeight;
-
-    const handleResize = () => {
-      clientHeightRef.current = snapContainer.clientHeight || window.innerHeight;
-    };
-    window.addEventListener("resize", handleResize);
 
     const startAnimationLoop = () => {
       if (isAnimating.current) return;
@@ -146,11 +137,11 @@ export default function CinematicBackground() {
         const mx = currentMx.current;
         const my = currentMy.current;
 
-        // Expanded camera tilt offsets (max 45px translation, 6.5deg rotation for deep 3D feel)
-        const txMouse = mx * -45;
-        const tyMouse = my * -45;
-        const rxMouse = my * 6.5;
-        const ryMouse = mx * -6.5;
+        // Expanded camera tilt offsets (max 55px translation, 7.5deg rotation for deep 3D feel)
+        const txMouse = mx * -55;
+        const tyMouse = my * -55;
+        const rxMouse = my * 7.5;
+        const ryMouse = mx * -7.5;
 
         // Scrim blending based on active layout
         const sectionInt = Math.floor(p);
@@ -160,6 +151,8 @@ export default function CinematicBackground() {
 
         const leftScrimOpacity = currentLeftTarget + (nextLeftTarget - currentLeftTarget) * ratio;
         const rightScrimOpacity = 1.0 - leftScrimOpacity;
+
+        const activeIndex = Math.min(Math.floor(p), CAMERA_CONFIGS.length - 1);
 
         for (let i = 0; i < CAMERA_CONFIGS.length; i++) {
           const wrap = imageWrapsRef.current[i];
@@ -172,6 +165,7 @@ export default function CinematicBackground() {
           let tx = 0;
           let ty = 0;
           let opacity = 0;
+          let zIndex = 1;
 
           if (p >= i - 1 && p <= i + 1) {
             if (p < i) {
@@ -185,29 +179,41 @@ export default function CinematicBackground() {
               // Translate from start positions to 0.0
               tx = config.startTx * (1.0 - tEase);
               ty = config.startTy * (1.0 - tEase);
-              // Incoming fades in on top
-              opacity = t;
+              // Render underneath the outgoing image as a solid backplane
+              opacity = 1.0;
+              zIndex = 5;
             } else {
               // ── Outgoing transition (i -> i+1) ──
               const t = p - i; // 0.0 -> 1.0
               const tEase = easeInOut(t);
               const config = CAMERA_CONFIGS[i];
 
-              // Scale up from 1.0 to endScale (e.g. 1.45)
+              // Zoom outgoing image deeply (up to 3.5) to fly through thresholds
               scale = 1.0 + (config.endScale - 1.0) * tEase;
-              // Translate from 0.0 to end positions
+              // Translate towards the doorway center
               tx = config.endTx * tEase;
               ty = config.endTy * tEase;
-              // Underneath layer stays opaque to prevent black background leak
-              opacity = 1.0;
+              
+              // Outgoing stays fully opaque and zooms deeply until t = 0.72, then fades out rapidly
+              // This prevents flat PowerPoint crossfading and simulates a physical camera doorway crossing.
+              const fadeStart = 0.72;
+              if (t < fadeStart) {
+                opacity = 1.0;
+              } else {
+                const fadeT = (t - fadeStart) / (1.0 - fadeStart);
+                opacity = 1.0 - easeInOut(fadeT);
+              }
+              zIndex = 10;
             }
           } else {
             // Out of active scroll window range
             opacity = 0.0;
+            zIndex = 1;
           }
 
           // Direct style updates for smooth GPU rendering
           wrap.style.opacity = String(opacity);
+          wrap.style.zIndex = String(zIndex);
           wrap.style.pointerEvents = opacity > 0.15 ? "auto" : "none";
 
           if (opacity > 0) {
@@ -217,7 +223,15 @@ export default function CinematicBackground() {
               photo.setAttribute("src", targetSrc);
             }
 
-            photo.style.transform = `scale(${scale}) translate3d(calc(${tx}vw + ${txMouse}px), calc(${ty}vh + ${tyMouse}px), 0) rotateX(${rxMouse}deg) rotateY(${ryMouse}deg)`;
+            // Apply mouse tilt to all visible images to lock them in the same 3D viewport.
+            // Panning translation is scaled by the image's scale to create a natural 3D depth parallax
+            // (zoomed-in foreground moves faster than zoomed-out background).
+            const appliedTxMouse = txMouse * scale;
+            const appliedTyMouse = tyMouse * scale;
+            const appliedRxMouse = rxMouse;
+            const appliedRyMouse = ryMouse;
+
+            photo.style.transform = `scale(${scale}) translate3d(calc(${tx}vw + ${appliedTxMouse}px), calc(${ty}vh + ${appliedTyMouse}px), 0) rotateX(${appliedRxMouse}deg) rotateY(${appliedRyMouse}deg)`;
 
             if (leftScrim) leftScrim.style.opacity = String(leftScrimOpacity);
             if (rightScrim) rightScrim.style.opacity = String(rightScrimOpacity);
@@ -256,7 +270,6 @@ export default function CinematicBackground() {
     handleScroll();
 
     return () => {
-      window.removeEventListener("resize", handleResize);
       snapContainer.removeEventListener("scroll", handleScroll);
       window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("mousemove", handleMouseMove);
