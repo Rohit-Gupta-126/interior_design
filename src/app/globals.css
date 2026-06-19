@@ -101,11 +101,11 @@ html, body {
     height: 100vh;
     z-index: 1;
     overflow: hidden;
-    opacity: 0; /* JS handles fading */
+    opacity: 0; /* JS handles visibility */
     pointer-events: none;
     perspective: 1200px;
     transform-style: preserve-3d;
-    will-change: opacity;
+    will-change: opacity, transform;
   }
 
   .ps-photo {
