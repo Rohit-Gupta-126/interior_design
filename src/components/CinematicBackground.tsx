@@ -1,61 +1,86 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
-const IMAGES = [
-  "/hero_exterior.png",
-  "/hero_entrance.png",
-  "/hero_hallway.png",
-  "/hero_living_room.png",
-  "/hero_kitchen.png",
-  "/hero_bedroom.png",
-];
+interface CameraConfig {
+  src: string;
+  endScale: number;
+  endTx: number;
+  endTy: number;
+  startScale: number;
+  startTx: number;
+  startTy: number;
+}
 
 // Spatially connected transitions mapping the drone walkthrough sequence:
-// - Zoom transitions: camera dollying forward through a doorway or down a hall.
-// - Pan transitions: camera turning laterally to look at an adjacent space.
-const CAM_PATHS = [
+// Each camera configuration details the start state (coming from previous room)
+// and the end state (going to next room).
+const CAMERA_CONFIGS: CameraConfig[] = [
   {
-    // Transition 0 (Section 1 -> 2: Exterior Facade -> Entrance Pivot Door)
-    // Focuses on the wood-glass door located center-left in the exterior photo.
-    type: "zoom",
-    targetScale: 3.0,
-    targetTx: -5.0,  // Shifts left to center the door
-    targetTy: -10.0, // Shifts up to center the door
+    // Exterior Facade (0)
+    src: "/hero_exterior.png",
+    endScale: 1.45,
+    endTx: 8.0,
+    endTy: 2.0,
+    startScale: 1.0,
+    startTx: 0.0,
+    startTy: 0.0,
   },
   {
-    // Transition 1 (Section 2 -> 3: Entrance Door -> Hallway Gallery)
-    // Focuses on the glowing corridor interior visible through the open doorway (shifted to the right in the entrance photo).
-    type: "zoom",
-    targetScale: 2.8,
-    targetTx: 18.0,  // Shifts right to center the corridor opening
-    targetTy: 6.0,
+    // Entrance Threshold Pivot (1)
+    src: "/hero_entrance.png",
+    endScale: 1.45,
+    endTx: -12.0,
+    endTy: 1.0,
+    startScale: 0.77,
+    startTx: -8.0,
+    startTy: -2.0,
   },
   {
-    // Transition 2 (Section 3 -> 4: Hallway Gallery -> Living Pavilion)
-    // Focuses on the living room at the far end of the long hallway corridor.
-    type: "zoom",
-    targetScale: 2.8,
-    targetTx: 0.0,
-    targetTy: -5.0,
+    // Minimal Hallway Gallery (2)
+    src: "/hero_hallway.png",
+    endScale: 1.45,
+    endTx: 0.0,
+    endTy: -2.0,
+    startScale: 0.77,
+    startTx: 12.0,
+    startTy: -1.0,
   },
   {
-    // Transition 3 (Section 4 -> 5: Living Pavilion -> Kitchen Island Studio)
-    // The kitchen is adjacent to the living room. Camera pans right laterally.
-    type: "pan-right",
-    targetScale: 1.0,
-    targetTx: 0,
-    targetTy: 0,
+    // Living Pavilion Hearth (3)
+    src: "/hero_living_room.png",
+    endScale: 1.25,
+    endTx: -28.0,
+    endTy: 0.0,
+    startScale: 0.77,
+    startTx: 0.0,
+    startTy: 2.0,
   },
   {
-    // Transition 4 (Section 5 -> 6: Kitchen Island Studio -> master timber bedroom)
-    // Focuses on entering the bedroom door at the end of the house.
-    type: "zoom",
-    targetScale: 2.6,
-    targetTx: -10.0,
-    targetTy: -5.0,
-  }
+    // Chef Kitchen Island (4)
+    src: "/hero_kitchen.png",
+    endScale: 1.45,
+    endTx: 8.0,
+    endTy: 1.0,
+    startScale: 0.82,
+    startTx: 28.0,
+    startTy: 0.0,
+  },
+  {
+    // Master Timber Bedroom (5)
+    src: "/hero_bedroom.png",
+    endScale: 1.15,
+    endTx: 0.0,
+    endTy: 0.0,
+    startScale: 0.77,
+    startTx: -8.0,
+    startTy: -1.0,
+  },
 ];
+
+const easeInOut = (t: number) => {
+  return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+};
 
 export default function CinematicBackground() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -64,10 +89,20 @@ export default function CinematicBackground() {
   const leftScrimsRef = useRef<(HTMLDivElement | null)[]>([]);
   const rightScrimsRef = useRef<(HTMLDivElement | null)[]>([]);
 
-  // Animation values interpolation
+  // Scroll-driven lazy loading of images
+  const [loadedIndices, setLoadedIndices] = useState<boolean[]>([
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+  ]);
+
+  // Animation values interpolation for steadycam feeling
   const targetP = useRef(0);
   const currentP = useRef(0);
-  
+
   const targetMx = useRef(0);
   const targetMy = useRef(0);
   const currentMx = useRef(0);
@@ -90,15 +125,14 @@ export default function CinematicBackground() {
     const startAnimationLoop = () => {
       if (isAnimating.current) return;
       isAnimating.current = true;
-      
+
       const tick = () => {
         const diffP = targetP.current - currentP.current;
         const diffMx = targetMx.current - currentMx.current;
         const diffMy = targetMy.current - currentMy.current;
 
-        // Easing factors for smooth dolly motion
-        const pEase = 0.08;
-        const mouseEase = 0.06;
+        const pEase = 0.07;
+        const mouseEase = 0.05;
 
         let active = false;
 
@@ -122,13 +156,13 @@ export default function CinematicBackground() {
         const mx = currentMx.current;
         const my = currentMy.current;
 
-        // Camera tilt offsets (max 30px translation, 4deg rotation)
-        const txMouse = mx * -30;
-        const tyMouse = my * -30;
-        const rxMouse = my * 4;
-        const ryMouse = mx * -4;
+        // Camera tilt offsets (max 35px translation, 4deg rotation)
+        const txMouse = mx * -35;
+        const tyMouse = my * -35;
+        const rxMouse = my * 4.0;
+        const ryMouse = mx * -4.0;
 
-        // Scrim blending based on layout side
+        // Scrim blending based on active layout
         const sectionInt = Math.floor(p);
         const ratio = p - sectionInt;
         const currentLeftTarget = (sectionInt % 2 === 0) ? 1.0 : 0.0;
@@ -137,12 +171,12 @@ export default function CinematicBackground() {
         const leftScrimOpacity = currentLeftTarget + (nextLeftTarget - currentLeftTarget) * ratio;
         const rightScrimOpacity = 1.0 - leftScrimOpacity;
 
-        for (let i = 0; i < IMAGES.length; i++) {
+        for (let i = 0; i < CAMERA_CONFIGS.length; i++) {
           const wrap = imageWrapsRef.current[i];
           const photo = photosRef.current[i];
           const leftScrim = leftScrimsRef.current[i];
           const rightScrim = rightScrimsRef.current[i];
-          if (!wrap || !photo) continue;
+          if (!wrap) continue;
 
           let scale = 1.0;
           let tx = 0;
@@ -153,64 +187,40 @@ export default function CinematicBackground() {
             if (p < i) {
               // ── Incoming transition (i-1 -> i) ──
               const t = p - (i - 1); // 0.0 -> 1.0
-              const path = CAM_PATHS[i - 1];
+              const tEase = easeInOut(t);
+              const config = CAMERA_CONFIGS[i];
 
-              if (path.type === "zoom") {
-                // Russian-Doll Nesting Math: starts scaled down and centers as t -> 1
-                const startScale = 1.0 / path.targetScale;
-                const startTx = -path.targetTx / path.targetScale;
-                const startTy = -path.targetTy / path.targetScale;
-
-                scale = startScale + (1.0 - startScale) * t;
-                tx = startTx * (1.0 - t);
-                ty = startTy * (1.0 - t);
-                opacity = t; // Fade in on top of previous
-              } else if (path.type === "pan-right") {
-                // Lateral Pan: slides in from the right edge
-                scale = 1.0;
-                tx = 100 * (1.0 - t);
-                ty = 0;
-                opacity = 1.0; // Fully opaque slide-in
-              }
+              // Scale up from startScale (e.g. 0.77) to 1.0
+              scale = config.startScale + (1.0 - config.startScale) * tEase;
+              // Translate from start positions to 0.0
+              tx = config.startTx * (1.0 - tEase);
+              ty = config.startTy * (1.0 - tEase);
+              // Incoming fades in on top
+              opacity = t;
             } else {
               // ── Outgoing transition (i -> i+1) ──
               const t = p - i; // 0.0 -> 1.0
+              const tEase = easeInOut(t);
+              const config = CAMERA_CONFIGS[i];
 
-              if (i < CAM_PATHS.length) {
-                const path = CAM_PATHS[i];
-
-                if (path.type === "zoom") {
-                  // Outgoing zoom: scales up towards the focal point
-                  scale = 1.0 + (path.targetScale - 1.0) * t;
-                  tx = path.targetTx * t;
-                  ty = path.targetTy * t;
-                  opacity = 1.0 - t; // Fades out to reveal nesting
-                } else if (path.type === "pan-right") {
-                  // Outgoing pan: slides left out of the viewport
-                  scale = 1.0;
-                  tx = -100 * t;
-                  ty = 0;
-                  opacity = 1.0; // Stays fully opaque underneath incoming
-                }
-              } else {
-                // Final image (Bedroom): slowly zooms on scroll overshoot
-                const tOver = Math.max(0, p - (IMAGES.length - 1));
-                scale = 1.0 + 0.15 * tOver;
-                tx = 0;
-                ty = 0;
-                opacity = 1.0;
-              }
+              // Scale up from 1.0 to endScale (e.g. 1.45)
+              scale = 1.0 + (config.endScale - 1.0) * tEase;
+              // Translate from 0.0 to end positions
+              tx = config.endTx * tEase;
+              ty = config.endTy * tEase;
+              // Underneath layer stays opaque to prevent black background leak
+              opacity = 1.0;
             }
           } else {
-            // Out of transition window
-            opacity = 0;
+            // Out of active scroll window range
+            opacity = 0.0;
           }
 
-          // Direct style edits for performance
+          // Direct style updates for smooth GPU rendering
           wrap.style.opacity = String(opacity);
           wrap.style.pointerEvents = opacity > 0.15 ? "auto" : "none";
 
-          if (opacity > 0) {
+          if (opacity > 0 && photo) {
             photo.style.transform = `scale(${scale}) translate3d(calc(${tx}vw + ${txMouse}px), calc(${ty}vh + ${tyMouse}px), 0) rotateX(${rxMouse}deg) rotateY(${ryMouse}deg)`;
 
             if (leftScrim) leftScrim.style.opacity = String(leftScrimOpacity);
@@ -224,12 +234,28 @@ export default function CinematicBackground() {
           isAnimating.current = false;
         }
       };
-      
+
       requestAnimationFrame(tick);
     };
 
     const handleScroll = () => {
-      targetP.current = Math.max(0, Math.min(5.0, snapContainer.scrollTop / clientHeightRef.current));
+      const scrollTop = snapContainer.scrollTop;
+      const progress = Math.max(0, Math.min(5.0, scrollTop / clientHeightRef.current));
+      targetP.current = progress;
+
+      // Lazy load next image keys as the user approaches
+      setLoadedIndices((prev) => {
+        let changed = false;
+        const next = [...prev];
+        for (let i = 0; i < CAMERA_CONFIGS.length; i++) {
+          if (!next[i] && progress >= i - 1.2) {
+            next[i] = true;
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
+
       startAnimationLoop();
     };
 
@@ -253,33 +279,35 @@ export default function CinematicBackground() {
 
   return (
     <div ref={containerRef} className="cinematic-bg-container">
-      {IMAGES.map((src, i) => (
+      {CAMERA_CONFIGS.map((config, i) => (
         <div
-          key={`${src}-${i}`}
+          key={`${config.src}-${i}`}
           ref={(el) => {
             imageWrapsRef.current[i] = el;
           }}
           className="ps-image-wrap"
           style={{ zIndex: i }}
         >
-          <img
-            ref={(el) => {
-              photosRef.current[i] = el;
-            }}
-            src={src}
-            alt={`Walkthrough space ${i + 1}`}
-            className="ps-photo"
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              objectPosition: "center",
-              transformOrigin: "center center",
-            }}
-          />
+          {loadedIndices[i] && (
+            <img
+              ref={(el) => {
+                photosRef.current[i] = el;
+              }}
+              src={config.src}
+              alt={`Walkthrough space ${i + 1}`}
+              className="ps-photo"
+              style={{
+                position: "absolute",
+                top: "-15%",
+                left: "-15%",
+                width: "130%",
+                height: "130%",
+                objectFit: "cover",
+                objectPosition: "center",
+                transformOrigin: "center center",
+              }}
+            />
+          )}
           <div
             ref={(el) => {
               leftScrimsRef.current[i] = el;

@@ -271,9 +271,10 @@ export default function ProjectSection({ project, sectionIndex }: ProjectSection
           </div>
         </div>
 
-        {/* SVG floor plan */}
-        <FloorPlanSVG />
-      </div>
-    </section>
+        </div>
+
+        {/* SVG floor plan positioned on the opposite side of the screen on desktop to avoid text overlap */}
+        <FloorPlanSVG className={isRightLayout ? "floor-left" : "floor-right"} />
+      </section>
   );
 }

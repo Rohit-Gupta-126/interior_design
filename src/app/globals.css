@@ -9,14 +9,14 @@
 
 /* ── Design Tokens ─────────────────────────────────────────── */
 :root {
-  --bg:            #0a0a0a;
-  --surface:       #111111;
-  --accent:        #e5c158; /* Slightly brighter, more visible gold */
-  --accent-dim:    rgba(229, 193, 88, 0.55);
-  --accent-border: rgba(229, 193, 88, 0.22);
-  --text-primary:  #ffffff; /* Pure white for maximum visibility */
-  --text-secondary: rgba(255, 255, 255, 0.88); /* High contrast warm gray/white */
-  --text-meta:     rgba(255, 255, 255, 0.6); /* Highly legible metadata */
+  --bg:            #0c0b0a; /* Deep warm ebony background */
+  --surface:       #141312; /* Rich warm dark surface */
+  --accent:        #c9a96e; /* Luxurious warm champagne gold */
+  --accent-dim:    rgba(201, 169, 110, 0.55);
+  --accent-border: rgba(201, 169, 110, 0.22);
+  --text-primary:  #f5f0e8; /* Heritage warm cream */
+  --text-secondary: rgba(245, 240, 232, 0.72); /* Muted warm cream */
+  --text-meta:     rgba(245, 240, 232, 0.45); /* Subtle warm gray */
 
   --font-serif: var(--font-cormorant), 'Times New Roman', Georgia, serif;
   --font-sans:  var(--font-dm-sans), system-ui, sans-serif;
@@ -81,6 +81,7 @@ html, body {
 
   .ps-root {
     scroll-snap-align: start;
+    scroll-snap-stop: always; /* Force snap to stop on each section */
     height: 100vh;
     width: 100%;
     position: relative;
@@ -368,11 +369,11 @@ html, body {
   background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(30px) saturate(210%);
   -webkit-backdrop-filter: blur(30px) saturate(210%);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.18); /* Tighter border */
   box-shadow: 
     0 16px 40px rgba(0, 0, 0, 0.5), 
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15);
     
   transform-style: preserve-3d;
   perspective: 1000px;
@@ -382,6 +383,21 @@ html, body {
               border-color 0.3s ease,
               background-color 0.3s ease;
   cursor: pointer;
+}
+
+/* Specify interactive specular glare highlight */
+.ps-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle 160px at var(--mouse-x, 0px) var(--mouse-y, 0px),
+    rgba(255, 255, 255, 0.16) 0%,
+    transparent 75%
+  );
+  pointer-events: none;
+  z-index: 5;
+  will-change: background;
 }
 
 .ps-card:hover {
@@ -430,10 +446,8 @@ html, body {
    ═══════════════════════════════════════════════════════════ */
 .floor-plan-svg {
   position: absolute;
-  bottom: 3rem;
-  right: 4.5rem;
-  width: 200px;
-  opacity: 0.25;
+  width: 210px;
+  opacity: 0.35; /* Upgraded visibility */
   pointer-events: none;
   z-index: 15;
 }
@@ -450,6 +464,19 @@ html, body {
 
 .floor-plan-svg.draw-active .floor-path {
   animation: drawPath 2.6s cubic-bezier(0.4, 0, 0.2, 1) 0.5s forwards;
+}
+
+@media (min-width: 901px) {
+  .floor-plan-svg.floor-left {
+    left: 6.5rem !important;
+    right: auto !important;
+    bottom: 5rem !important;
+  }
+  .floor-plan-svg.floor-right {
+    right: 6.5rem !important;
+    left: auto !important;
+    bottom: 5rem !important;
+  }
 }
 
 @keyframes drawPath {
