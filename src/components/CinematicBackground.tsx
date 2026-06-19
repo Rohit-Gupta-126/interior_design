@@ -278,7 +278,7 @@ export default function CinematicBackground() {
             ref={(el) => {
               photosRef.current[i] = el;
             }}
-            src=""
+            src={undefined}
             alt={`Walkthrough space ${i + 1}`}
             className="ps-photo"
             style={{
