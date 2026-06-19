@@ -11,14 +11,50 @@ const IMAGES = [
   "/hero_bedroom.png",
 ];
 
-// Continuous camera drift paths for each room (dx: translateX drift in vw, dy: translateY drift in vh)
-const DRIFT_PATHS = [
-  { dx: -1.5, dy: -0.5 }, // Section 1: Drifts slightly left-up
-  { dx: 1.0, dy: -1.0 },  // Section 2: Drifts right-up
-  { dx: 0.0, dy: -1.8 },  // Section 3: Drifts straight forward-up
-  { dx: -1.5, dy: 0.5 },  // Section 4: Drifts left-down
-  { dx: 1.2, dy: -0.5 },  // Section 5: Drifts right-up
-  { dx: 0.0, dy: -1.2 },  // Section 6: Drifts forward-down
+// Spatially connected transitions mapping the drone walkthrough sequence:
+// - Zoom transitions: camera dollying forward through a doorway or down a hall.
+// - Pan transitions: camera turning laterally to look at an adjacent space.
+const CAM_PATHS = [
+  {
+    // Transition 0 (Section 1 -> 2: Exterior Facade -> Entrance Pivot Door)
+    // Focuses on the wood-glass door located center-left in the exterior photo.
+    type: "zoom",
+    targetScale: 3.0,
+    targetTx: -5.0,  // Shifts left to center the door
+    targetTy: -10.0, // Shifts up to center the door
+  },
+  {
+    // Transition 1 (Section 2 -> 3: Entrance Door -> Hallway Gallery)
+    // Focuses on the glowing corridor interior visible through the open doorway (shifted to the right in the entrance photo).
+    type: "zoom",
+    targetScale: 2.8,
+    targetTx: 18.0,  // Shifts right to center the corridor opening
+    targetTy: 6.0,
+  },
+  {
+    // Transition 2 (Section 3 -> 4: Hallway Gallery -> Living Pavilion)
+    // Focuses on the living room at the far end of the long hallway corridor.
+    type: "zoom",
+    targetScale: 2.8,
+    targetTx: 0.0,
+    targetTy: -5.0,
+  },
+  {
+    // Transition 3 (Section 4 -> 5: Living Pavilion -> Kitchen Island Studio)
+    // The kitchen is adjacent to the living room. Camera pans right laterally.
+    type: "pan-right",
+    targetScale: 1.0,
+    targetTx: 0,
+    targetTy: 0,
+  },
+  {
+    // Transition 4 (Section 5 -> 6: Kitchen Island Studio -> master timber bedroom)
+    // Focuses on entering the bedroom door at the end of the house.
+    type: "zoom",
+    targetScale: 2.6,
+    targetTx: -10.0,
+    targetTy: -5.0,
+  }
 ];
 
 export default function CinematicBackground() {
@@ -28,7 +64,7 @@ export default function CinematicBackground() {
   const leftScrimsRef = useRef<(HTMLDivElement | null)[]>([]);
   const rightScrimsRef = useRef<(HTMLDivElement | null)[]>([]);
 
-  // Animation targets and currents for smooth steadycam interpolation
+  // Animation values interpolation
   const targetP = useRef(0);
   const currentP = useRef(0);
   
@@ -60,13 +96,12 @@ export default function CinematicBackground() {
         const diffMx = targetMx.current - currentMx.current;
         const diffMy = targetMy.current - currentMy.current;
 
-        // Smooth easing factors
-        const pEase = 0.07;
-        const mouseEase = 0.05;
+        // Easing factors for smooth dolly motion
+        const pEase = 0.08;
+        const mouseEase = 0.06;
 
         let active = false;
 
-        // Interpolate scroll position
         if (Math.abs(diffP) > 0.0001) {
           currentP.current += diffP * pEase;
           active = true;
@@ -74,7 +109,6 @@ export default function CinematicBackground() {
           currentP.current = targetP.current;
         }
 
-        // Interpolate mouse coordinates
         if (Math.abs(diffMx) > 0.0001 || Math.abs(diffMy) > 0.0001) {
           currentMx.current += diffMx * mouseEase;
           currentMy.current += diffMy * mouseEase;
@@ -88,13 +122,13 @@ export default function CinematicBackground() {
         const mx = currentMx.current;
         const my = currentMy.current;
 
-        // 3D Parallax camera turning (translate & rotate)
-        const txMouse = mx * -30; // in px
-        const tyMouse = my * -30; // in px
-        const rxMouse = my * 4;    // in deg
-        const ryMouse = mx * -4;   // in deg
+        // Camera tilt offsets (max 30px translation, 4deg rotation)
+        const txMouse = mx * -30;
+        const tyMouse = my * -30;
+        const rxMouse = my * 4;
+        const ryMouse = mx * -4;
 
-        // Calculate horizontal scrim blending based on active section
+        // Scrim blending based on layout side
         const sectionInt = Math.floor(p);
         const ratio = p - sectionInt;
         const currentLeftTarget = (sectionInt % 2 === 0) ? 1.0 : 0.0;
@@ -114,57 +148,69 @@ export default function CinematicBackground() {
           let tx = 0;
           let ty = 0;
           let opacity = 0;
-          let translateY = 100; // in vh
 
-          if (p < i - 1) {
-            // Unentered room: stays below
-            opacity = 0;
-            translateY = 100;
-            scale = 1.0;
-            tx = 0;
-            ty = 0;
-          } else if (p >= i - 1 && p < i) {
-            // Incoming threshold slide-up phase!
-            const t = p - (i - 1); // 0.0 -> 1.0
-            opacity = 1.0;
-            translateY = (1.0 - t) * 100; // slides from 100vh down to 0
-            scale = 1.0;
-            tx = 0;
-            ty = 0;
-          } else if (p >= i && p < i + 1) {
-            // Active room: stationary, slowly zooming and drifting
-            const t = p - i; // 0.0 -> 1.0
-            opacity = 1.0;
-            translateY = 0;
-            scale = 1.0 + 0.15 * t; // zoom 1.0 -> 1.15
-            tx = DRIFT_PATHS[i].dx * t;
-            ty = DRIFT_PATHS[i].dy * t;
-          } else {
-            // Special case for last image: keep it zooming if p > 5
-            if (i === IMAGES.length - 1 && p >= IMAGES.length - 1) {
-              const t = p - (IMAGES.length - 1);
-              opacity = 1.0;
-              translateY = 0;
-              scale = 1.15 + 0.05 * t;
-              tx = DRIFT_PATHS[i].dx + t * 0.5;
-              ty = DRIFT_PATHS[i].dy + t * 0.2;
+          if (p >= i - 1 && p <= i + 1) {
+            if (p < i) {
+              // ── Incoming transition (i-1 -> i) ──
+              const t = p - (i - 1); // 0.0 -> 1.0
+              const path = CAM_PATHS[i - 1];
+
+              if (path.type === "zoom") {
+                // Russian-Doll Nesting Math: starts scaled down and centers as t -> 1
+                const startScale = 1.0 / path.targetScale;
+                const startTx = -path.targetTx / path.targetScale;
+                const startTy = -path.targetTy / path.targetScale;
+
+                scale = startScale + (1.0 - startScale) * t;
+                tx = startTx * (1.0 - t);
+                ty = startTy * (1.0 - t);
+                opacity = t; // Fade in on top of previous
+              } else if (path.type === "pan-right") {
+                // Lateral Pan: slides in from the right edge
+                scale = 1.0;
+                tx = 100 * (1.0 - t);
+                ty = 0;
+                opacity = 1.0; // Fully opaque slide-in
+              }
             } else {
-              // Past room: completely covered by the higher z-index slide-up frame
-              opacity = 0;
-              translateY = 0;
-              scale = 1.15;
-              tx = DRIFT_PATHS[i].dx;
-              ty = DRIFT_PATHS[i].dy;
+              // ── Outgoing transition (i -> i+1) ──
+              const t = p - i; // 0.0 -> 1.0
+
+              if (i < CAM_PATHS.length) {
+                const path = CAM_PATHS[i];
+
+                if (path.type === "zoom") {
+                  // Outgoing zoom: scales up towards the focal point
+                  scale = 1.0 + (path.targetScale - 1.0) * t;
+                  tx = path.targetTx * t;
+                  ty = path.targetTy * t;
+                  opacity = 1.0 - t; // Fades out to reveal nesting
+                } else if (path.type === "pan-right") {
+                  // Outgoing pan: slides left out of the viewport
+                  scale = 1.0;
+                  tx = -100 * t;
+                  ty = 0;
+                  opacity = 1.0; // Stays fully opaque underneath incoming
+                }
+              } else {
+                // Final image (Bedroom): slowly zooms on scroll overshoot
+                const tOver = Math.max(0, p - (IMAGES.length - 1));
+                scale = 1.0 + 0.15 * tOver;
+                tx = 0;
+                ty = 0;
+                opacity = 1.0;
+              }
             }
+          } else {
+            // Out of transition window
+            opacity = 0;
           }
 
-          // Apply styles directly to bypass React state overhead
+          // Direct style edits for performance
           wrap.style.opacity = String(opacity);
-          wrap.style.transform = `translate3d(0, ${translateY}vh, 0)`;
           wrap.style.pointerEvents = opacity > 0.15 ? "auto" : "none";
 
           if (opacity > 0) {
-            // Apply scale, pan drift, and mouse camera tilt
             photo.style.transform = `scale(${scale}) translate3d(calc(${tx}vw + ${txMouse}px), calc(${ty}vh + ${tyMouse}px), 0) rotateX(${rxMouse}deg) rotateY(${ryMouse}deg)`;
 
             if (leftScrim) leftScrim.style.opacity = String(leftScrimOpacity);
@@ -183,7 +229,6 @@ export default function CinematicBackground() {
     };
 
     const handleScroll = () => {
-      // 6 sections = scroll progress from 0.0 to 5.0
       targetP.current = Math.max(0, Math.min(5.0, snapContainer.scrollTop / clientHeightRef.current));
       startAnimationLoop();
     };
@@ -197,7 +242,6 @@ export default function CinematicBackground() {
     snapContainer.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("mousemove", handleMouseMove, { passive: true });
 
-    // Run initial frame
     handleScroll();
 
     return () => {
@@ -216,7 +260,7 @@ export default function CinematicBackground() {
             imageWrapsRef.current[i] = el;
           }}
           className="ps-image-wrap"
-          style={{ zIndex: i }} // Z-index maps to sequence order to stack correctly on slide-up
+          style={{ zIndex: i }}
         >
           <img
             ref={(el) => {
