@@ -43,13 +43,7 @@ interface ProjectSectionProps {
   sectionIndex: number;
 }
 
-/* ── Origin Focus Mapping for zooms ── */
-const ORIGINS: Record<number, string> = {
-  0: "80% 70%", // Section 1: Wide room -> focus fireplace console on bottom right
-  1: "50% 50%", // Section 2: Macro detail -> focus center
-  2: "50% 52%", // Section 3: Hallway corridor -> focus water feature at end
-  3: "50% 50%", // Section 4: Water feature -> focus center
-};
+
 
 /* ── Tilt Utility for Stats Card ─────────────────────────── */
 function getTiltTransform(

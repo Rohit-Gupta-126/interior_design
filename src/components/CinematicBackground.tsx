@@ -152,8 +152,6 @@ export default function CinematicBackground() {
         const leftScrimOpacity = currentLeftTarget + (nextLeftTarget - currentLeftTarget) * ratio;
         const rightScrimOpacity = 1.0 - leftScrimOpacity;
 
-        const activeIndex = Math.min(Math.floor(p), CAMERA_CONFIGS.length - 1);
-
         for (let i = 0; i < CAMERA_CONFIGS.length; i++) {
           const wrap = imageWrapsRef.current[i];
           const photo = photosRef.current[i];
@@ -287,6 +285,7 @@ export default function CinematicBackground() {
           className="ps-image-wrap"
           style={{ zIndex: i }}
         >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             ref={(el) => {
               photosRef.current[i] = el;
