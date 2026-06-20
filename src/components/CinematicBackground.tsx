@@ -10,70 +10,82 @@ interface CameraConfig {
   startScale: number;
   startTx: number;
   startTy: number;
+  transformOrigin: string;
 }
 
 // Spatially connected transitions mapping the drone walkthrough sequence:
-// We use deep zooms (endScale of 3.5) and translations to fly through doorways.
+// We use deep zooms (endScale of 3.5) centered on transformOrigin (doorways)
+// and tiny translations (drift) to maintain zero border exposure.
 const CAMERA_CONFIGS: CameraConfig[] = [
   {
-    // Exterior Facade (0)
     src: "/hero_exterior.png",
-    endScale: 3.5,
-    endTx: 22.0,    // Center the doorway to the left as we zoom in
-    endTy: 2.0,
+    endScale: 1.05,
+    endTx: -0.3,
+    endTy: -0.4,
     startScale: 1.0,
     startTx: 0.0,
     startTy: 0.0,
+    transformOrigin: "35% 65%",
   },
   {
-    // Entrance Threshold Pivot (1)
     src: "/hero_entrance.png",
-    endScale: 3.5,
-    endTx: -28.0,   // Center the hallway to the right as we zoom in
-    endTy: 1.0,
-    startScale: 0.77,
-    startTx: -22.0,
-    startTy: -2.0,
+    endScale: 1.05,
+    endTx: 0.3,
+    endTy: 0.1,
+    startScale: 1.0,
+    startTx: -0.2,
+    startTy: -0.1,
+    transformOrigin: "28% 50%",
   },
   {
-    // Minimal Hallway Gallery (2)
     src: "/hero_hallway.png",
-    endScale: 3.5,
-    endTx: 0.0,     // Center zoom down the corridor
-    endTy: -6.0,
-    startScale: 0.77,
-    startTx: 28.0,
-    startTy: 2.0,
+    endScale: 1.05,
+    endTx: -0.2,
+    endTy: -0.3,
+    startScale: 1.0,
+    startTx: 0.2,
+    startTy: 0.1,
+    transformOrigin: "38% 50%",
   },
   {
-    // Living Pavilion Hearth (3)
     src: "/hero_living_room.png",
-    endScale: 2.8,    // Lateral dolly pan to the kitchen
-    endTx: -60.0,
+    endScale: 1.05,
+    endTx: -0.25,
     endTy: 0.0,
-    startScale: 0.77,
+    startScale: 1.0,
     startTx: 0.0,
-    startTy: 6.0,
+    startTy: 0.3,
+    transformOrigin: "35% 50%",
   },
   {
-    // Chef Kitchen Island (4)
     src: "/hero_kitchen.png",
-    endScale: 3.5,
-    endTx: 22.0,    // Zoom towards the bedroom threshold
-    endTy: 1.0,
-    startScale: 0.82,
-    startTx: 60.0,
+    endScale: 1.05,
+    endTx: 0.1,
+    endTy: 0.05,
+    startScale: 1.0,
+    startTx: 0.25,
     startTy: 0.0,
+    transformOrigin: "70% 50%",
   },
   {
-    // Master Timber Bedroom (5)
     src: "/hero_bedroom.png",
-    endScale: 1.15,
+    endScale: 1.05,
+    endTx: 0.0,
+    endTy: -0.25,
+    startScale: 1.0,
+    startTx: -0.1,
+    startTy: -0.05,
+    transformOrigin: "50% 50%",
+  },
+  {
+    src: "/zen_water_feature.png",
+    endScale: 1.05,
     endTx: 0.0,
     endTy: 0.0,
-    startScale: 0.77,
-    startTx: -22.0,
-    startTy: -1.0,
+    startScale: 1.0,
+    startTx: 0.0,
+    startTy: 0.5,
+    transformOrigin: "50% 50%",
   },
 ];
 
@@ -92,11 +104,6 @@ export default function CinematicBackground() {
   const targetP = useRef(0);
   const currentP = useRef(0);
 
-  const targetMx = useRef(0);
-  const targetMy = useRef(0);
-  const currentMx = useRef(0);
-  const currentMy = useRef(0);
-
   const isAnimating = useRef(false);
 
   useEffect(() => {
@@ -109,11 +116,8 @@ export default function CinematicBackground() {
 
       const tick = () => {
         const diffP = targetP.current - currentP.current;
-        const diffMx = targetMx.current - currentMx.current;
-        const diffMy = targetMy.current - currentMy.current;
 
         const pEase = 0.07;
-        const mouseEase = 0.05;
 
         let active = false;
 
@@ -124,24 +128,7 @@ export default function CinematicBackground() {
           currentP.current = targetP.current;
         }
 
-        if (Math.abs(diffMx) > 0.0001 || Math.abs(diffMy) > 0.0001) {
-          currentMx.current += diffMx * mouseEase;
-          currentMy.current += diffMy * mouseEase;
-          active = true;
-        } else {
-          currentMx.current = targetMx.current;
-          currentMy.current = targetMy.current;
-        }
-
         const p = currentP.current;
-        const mx = currentMx.current;
-        const my = currentMy.current;
-
-        // Expanded camera tilt offsets (max 55px translation, 7.5deg rotation for deep 3D feel)
-        const txMouse = mx * -55;
-        const tyMouse = my * -55;
-        const rxMouse = my * 7.5;
-        const ryMouse = mx * -7.5;
 
         // Scrim blending based on active layout
         const sectionInt = Math.floor(p);
@@ -221,15 +208,9 @@ export default function CinematicBackground() {
               photo.setAttribute("src", targetSrc);
             }
 
-            // Apply mouse tilt to all visible images to lock them in the same 3D viewport.
-            // Panning translation is scaled by the image's scale to create a natural 3D depth parallax
-            // (zoomed-in foreground moves faster than zoomed-out background).
-            const appliedTxMouse = txMouse * scale;
-            const appliedTyMouse = tyMouse * scale;
-            const appliedRxMouse = rxMouse;
-            const appliedRyMouse = ryMouse;
-
-            photo.style.transform = `scale(${scale}) translate3d(calc(${tx}vw + ${appliedTxMouse}px), calc(${ty}vh + ${appliedTyMouse}px), 0) rotateX(${appliedRxMouse}deg) rotateY(${appliedRyMouse}deg)`;
+            // Apply scroll-driven transform only (no mouse parallax)
+            photo.style.transformOrigin = CAMERA_CONFIGS[i].transformOrigin;
+            photo.style.transform = `scale(${scale}) translate3d(${tx}vw, ${ty}vh, 0)`;
 
             if (leftScrim) leftScrim.style.opacity = String(leftScrimOpacity);
             if (rightScrim) rightScrim.style.opacity = String(rightScrimOpacity);
@@ -249,28 +230,19 @@ export default function CinematicBackground() {
     const handleScroll = () => {
       const scrollTop = snapContainer.scrollTop || window.scrollY || document.documentElement.scrollTop || 0;
       const clientHeight = snapContainer.clientHeight || window.innerHeight || 800;
-      const progress = Math.max(0, Math.min(5.0, scrollTop / (clientHeight || 1)));
+      const progress = Math.max(0, Math.min(6.0, scrollTop / (clientHeight || 1)));
       targetP.current = progress;
-      startAnimationLoop();
-    };
-
-    const handleMouseMove = (e: MouseEvent) => {
-      // Scale mouse position to range -1.0 to 1.0 (doubled range for deep parallax effect)
-      targetMx.current = ((e.clientX / window.innerWidth) - 0.5) * 2;
-      targetMy.current = ((e.clientY / window.innerHeight) - 0.5) * 2;
       startAnimationLoop();
     };
 
     snapContainer.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("mousemove", handleMouseMove, { passive: true });
 
     handleScroll();
 
     return () => {
       snapContainer.removeEventListener("scroll", handleScroll);
       window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("mousemove", handleMouseMove);
     };
   }, []);
 
@@ -290,7 +262,7 @@ export default function CinematicBackground() {
             ref={(el) => {
               photosRef.current[i] = el;
             }}
-            src={undefined}
+            src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
             alt={`Walkthrough space ${i + 1}`}
             className="ps-photo"
             style={{
@@ -300,8 +272,10 @@ export default function CinematicBackground() {
               width: "130%",
               height: "130%",
               objectFit: "cover",
-              objectPosition: "center",
+              objectPosition: "center center",
               transformOrigin: "center center",
+              minWidth: "130vw",
+              minHeight: "130vh",
             }}
           />
           <div

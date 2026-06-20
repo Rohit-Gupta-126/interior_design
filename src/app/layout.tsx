@@ -7,8 +7,9 @@
  */
 
 import type { Metadata } from "next";
-import { Cormorant_Garamond, DM_Sans } from "next/font/google";
-import "./globals.css";
+import { Cormorant_Garamond, Inter } from "next/font/google";
+import "./vora.css";
+import LoadingScreen from "@/components/LoadingScreen";
 
 /* ── Cormorant Garamond — editorial heading font ── */
 const cormorant = Cormorant_Garamond({
@@ -19,31 +20,35 @@ const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
 });
 
-/* ── DM Sans — clean, minimal UI font ── */
-const dmSans = DM_Sans({
-  weight: ["300", "400", "500"],
+/* ── Inter — clean, minimal UI font ── */
+const inter = Inter({
+  weight: ["300", "400", "500", "600"],
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-dm-sans",
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
-  title: "ARKA Interiors — Luxury Interior Design, Jamshedpur",
+  title: "VORA — Interior Design Studio",
   description:
-    "ARKA Interiors creates bespoke luxury living spaces in Jamshedpur and across India. Where industrial heritage meets extreme refinement.",
+    "VORA is a boutique interior design practice working across India. We design for the way you actually live.",
   keywords: [
-    "luxury interior design",
-    "Jamshedpur",
-    "bespoke interiors",
-    "high-end architecture",
-    "interior designer India",
+    "VORA",
+    "interior design",
+    "boutique studio",
+    "bespoke spaces",
+    "minimalist design",
+    "India",
   ],
   openGraph: {
-    title: "ARKA Interiors — Luxury Interior Design, Jamshedpur",
-    description: "Bespoke luxury interiors for those who demand the extraordinary.",
+    title: "VORA — Interior Design Studio",
+    description: "We design for the way you actually live.",
     type: "website",
   },
 };
+
+import CustomCursor from "@/components/CustomCursor";
+import LiquidGlassFilters from "@/components/LiquidGlassFilters";
 
 interface RootLayoutProps {
   children: React.ReactNode;
@@ -55,9 +60,14 @@ export default function RootLayout({ children }: RootLayoutProps) {
       lang="en"
       /* Inject both font CSS variables onto the <html> element so
          they are available everywhere via var(--font-cormorant) etc. */
-      className={`${cormorant.variable} ${dmSans.variable}`}
+      className={`${cormorant.variable} ${inter.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        <LoadingScreen />
+        <CustomCursor />
+        <LiquidGlassFilters />
+        {children}
+      </body>
     </html>
   );
 }

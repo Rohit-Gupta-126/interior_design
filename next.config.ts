@@ -17,6 +17,12 @@ const nextConfig: NextConfig = {
     /* Next.js 16 requires an explicit qualities allowlist.
        We use quality={85} in ProjectSection.tsx, so 85 must be included. */
     qualities: [25, 50, 75, 85, 90, 100],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+    ],
   },
 };
 

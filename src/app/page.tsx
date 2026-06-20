@@ -1,188 +1,288 @@
-/**
- * app/page.tsx
- *
- * Main page: assembles the scroll-snap container and maps over
- * the project data to render each ProjectSection.
- *
- * It imports CinematicBackground to display the 3D scroll walkthrough
- * behind the transparent editorial sections on desktop.
- */
+"use client";
 
-import ProjectSection, {
-  type ProjectData,
-} from "@/components/ProjectSection";
-import ProgressNav from "@/components/ProgressNav";
-import CinematicBackground from "@/components/CinematicBackground";
-
-/* ══════════════════════════════════════════════════════════════
-   PROJECT DATA
-   Each entry represents a "keyframe" or space in the single-home walk.
-   imageSrc paths are relative to /public.
-   ══════════════════════════════════════════════════════════════ */
-
-const projects: ProjectData[] = [
-  {
-    index: 1,
-    id: "exterior-facade",
-    category: "The Walkthrough",
-    headline: "Exterior",
-    headlineAlt: "Facade",
-    description:
-      "A minimalist brutalist entrance of raw concrete, timber, and towering glass panels. Natural gravel pathways and subtle evening lighting introduce a clean, understated luxury sanctuary.",
-    stat: {
-      label: "Project Area",
-      value: "5,600",
-      suffix: "sq ft",
-    },
-    location: "Dalma Foothills, Jamshedpur",
-    year: "2026",
-    imageSrc: "/hero_exterior.png",
-    imageAlt:
-      "Exterior concrete and glass facade of modern minimalist villa",
-  },
-  {
-    index: 2,
-    id: "entrance-threshold",
-    category: "The Walkthrough",
-    headline: "The Pivot",
-    headlineAlt: "Threshold",
-    description:
-      "Crossing the threshold. A massive dark-steel framed oak pivot door swings open silently, offering a warm glimpse into the polished concrete interiors of the home.",
-    stat: {
-      label: "Door Weight",
-      value: "320",
-      suffix: "kg",
-    },
-    location: "Main Foyer, Jamshedpur",
-    year: "2026",
-    imageSrc: "/hero_entrance.png",
-    imageAlt:
-      "Slightly open oak pivot door at the entry of the modern villa",
-  },
-  {
-    index: 3,
-    id: "minimal-hallway",
-    category: "The Walkthrough",
-    headline: "The Gallery",
-    headlineAlt: "Corridor",
-    description:
-      "A long, architectural concrete hallway guided by hidden warm LEDs. Floor-to-ceiling glass on one side frames a private courtyard with a single, sculptural olive tree.",
-    stat: {
-      label: "Corridor Length",
-      value: "18",
-      suffix: "m",
-    },
-    location: "West Wing, Jamshedpur",
-    year: "2026",
-    imageSrc: "/hero_hallway.png",
-    imageAlt:
-      "Polished concrete hallway with glass facade looking onto olive tree",
-  },
-  {
-    index: 4,
-    id: "living-pavilion",
-    category: "The Walkthrough",
-    headline: "The Hearth",
-    headlineAlt: "Pavilion",
-    description:
-      "Arriving at the heart of the home. The modular charcoal leather sofa and raw concrete walls center around a clean architectural fireplace, open to the backyard garden.",
-    stat: {
-      label: "Ceiling Height",
-      value: "3.8",
-      suffix: "m",
-    },
-    location: "Living Pavilion, Jamshedpur",
-    year: "2026",
-    imageSrc: "/hero_living_room.png",
-    imageAlt:
-      "Cozy brutalist living room with low charcoal sofa and garden view",
-  },
-  {
-    index: 5,
-    id: "chef-kitchen",
-    category: "The Walkthrough",
-    headline: "The Culinary",
-    headlineAlt: "Studio",
-    description:
-      "A minimal, clean culinary space featuring a monolithic concrete island, warm light-oak cabinetry, and hidden architectural details. Pure function meets luxury texture.",
-    stat: {
-      label: "Island Length",
-      value: "4.2",
-      suffix: "m",
-    },
-    location: "Living Pavilion, Jamshedpur",
-    year: "2026",
-    imageSrc: "/hero_kitchen.png",
-    imageAlt:
-      "Minimalist kitchen island of concrete and light wood custom cabinets",
-  },
-  {
-    index: 6,
-    id: "master-bedroom",
-    category: "The Walkthrough",
-    headline: "Timber",
-    headlineAlt: "Sanctuary",
-    description:
-      "A tranquil master suite wrapped in warm oak paneling. The low-slung platform bed looks out through expansive windows into the private garden trees, creating a quiet retreat.",
-    stat: {
-      label: "Platform Material",
-      value: "Solid Oak",
-    },
-    location: "East Wing, Jamshedpur",
-    year: "2026",
-    imageSrc: "/hero_bedroom.png",
-    imageAlt:
-      "Minimal bedroom platform bed with gray bedding and timber oak paneling",
-  },
-];
-
-/* ══════════════════════════════════════════════════════════════
-   PAGE COMPONENT
-   ══════════════════════════════════════════════════════════════ */
+import React, { useEffect } from "react";
+import PanoramicWalkthrough from "@/components/PanoramicWalkthrough";
+import Tilt from "@/components/Tilt";
 
 export default function HomePage() {
-  const sectionIds = projects.map((p) => p.id);
+  useEffect(() => {
+    // --- SCROLL REVEAL Observer ---
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            const target = e.target as HTMLElement;
+            target.style.opacity = "1";
+            target.style.transform = "translateY(0) scale(1)";
+          }
+        });
+      },
+      { threshold: 0.06 }
+    );
+
+    // Select elements to reveal
+    const revealElements = document.querySelectorAll(
+      "#about, .sv-card, .stat-card, .contact-inner"
+    );
+
+    revealElements.forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      htmlEl.style.opacity = "0";
+      htmlEl.style.transform = "translateY(32px) scale(0.97)";
+      htmlEl.style.transition =
+        "opacity 0.9s ease, transform 0.9s ease";
+      observer.observe(htmlEl);
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   return (
     <>
-      {/* ── Fixed Navigation Header ──────────────────────────── */}
-      <header className="site-nav" role="banner">
-        <div className="nav-logo">
-          ARK<span>A</span>
+      <header className="lg-wrap nav-lg-wrap" role="banner">
+        <div className="lg-refract" />
+        <div className="lg-body nav-lg-body">
+          <a href="#" className="nav-logo">
+            VOR<span>A</span>
+          </a>
+          <nav className="nav-links">
+            <a href="#" className="nav-link">Walkthrough</a>
+            <a href="#about-wrap" className="nav-link">About</a>
+            <a href="#services" className="nav-link">Services</a>
+            <a href="#contact" className="nav-link">Contact</a>
+          </nav>
+          <a
+            href="#contact"
+            className="nav-enquire"
+          >
+            Enquire
+          </a>
         </div>
-        <p className="nav-tagline">
-          Luxury Interiors &nbsp;·&nbsp; Jamshedpur, India
-        </p>
-        <a
-          href="mailto:studio@arkainteriors.in"
-          className="nav-enquire"
-          aria-label="Contact ARKA Interiors"
-        >
-          Enquire
-        </a>
       </header>
 
-      {/* ── Fixed 3D Cinematic Background Stack ──────────────── */}
-      <CinematicBackground />
+      {/* --- Walkthrough Section ------------------------------- */}
+      <PanoramicWalkthrough />
 
-      {/* ── Scroll-Snap Main Container ───────────────────────── */}
-      <main
-        id="snap-container"
-        className="snap-container"
-        role="main"
-        aria-label="Portfolio of luxury interior projects"
-      >
-        {projects.map((project, i) => (
-          <ProjectSection
-            key={project.id}
-            project={project}
-            sectionIndex={i}
-          />
-        ))}
-      </main>
+      {/* --- Scrolling Content Sections ----------------------- */}
+      <div id="sections-wrap">
+        {/* --- Ticker Row ------------------------------------ */}
+        <div id="ticker">
+          <div className="t-track">
+            <span className="t-item">Residential Design &nbsp;·&nbsp;</span>
+            <span className="t-item">Commercial Spaces &nbsp;·&nbsp;</span>
+            <span className="t-item">Furniture Curation &nbsp;·&nbsp;</span>
+            <span className="t-item">Material Sourcing &nbsp;·&nbsp;</span>
+            <span className="t-item">Lighting Design &nbsp;·&nbsp;</span>
+            <span className="t-item">3D Visualisation &nbsp;·&nbsp;</span>
+            <span className="t-item">Project Management &nbsp;·&nbsp;</span>
+            {/* Duplicate for infinite loop */}
+            <span className="t-item">Residential Design &nbsp;·&nbsp;</span>
+            <span className="t-item">Commercial Spaces &nbsp;·&nbsp;</span>
+            <span className="t-item">Furniture Curation &nbsp;·&nbsp;</span>
+            <span className="t-item">Material Sourcing &nbsp;·&nbsp;</span>
+            <span className="t-item">Lighting Design &nbsp;·&nbsp;</span>
+            <span className="t-item">3D Visualisation &nbsp;·&nbsp;</span>
+            <span className="t-item">Project Management &nbsp;·&nbsp;</span>
+          </div>
+        </div>
 
-      {/* ── Fixed Side Progress Navigation ───────────────────── */}
-      <ProgressNav sectionIds={sectionIds} />
+        {/* --- About Studio Section -------------------------- */}
+        <div id="about-wrap">
+          <section id="about">
+            <Tilt
+              max={4}
+              speed={600}
+              perspective={1400}
+              glare={true}
+              maxGlare={0.1}
+              className="a-text-card"
+            >
+              <div className="a-text-card-refract" />
+              <div className="a-text-card-body">
+                <p className="a-tag">About the Studio</p>
+                <h2 className="a-head">
+                  We design for the way you actually live.
+                </h2>
+                <p className="a-body">
+                  VORA is a boutique interior design practice working across
+                  India. We believe great spaces begin with listening —
+                  understanding how a family moves, what light does to a room at
+                  six in the evening, and which textures earn the right to stay.
+                  Every project is handled as a bespoke commission from concept
+                  to handover.
+                </p>
+              </div>
+            </Tilt>
+          </section>
+        </div>
+
+        {/* --- Services Section ------------------------------ */}
+        <section id="services">
+          <div className="sv-head">
+            <h2 className="sv-title">What we do</h2>
+            <span className="sv-ct">03 Services</span>
+          </div>
+          <div className="sv-grid">
+            <Tilt
+              max={10}
+              speed={500}
+              perspective={900}
+              glare={true}
+              maxGlare={0.15}
+              scale={1.03}
+              className="sv-card"
+            >
+              <div className="sv-card-refract" />
+              <div className="sv-card-body">
+                <div className="sv-num">01</div>
+                <h3 className="sv-name">Residential</h3>
+                <p className="sv-desc">
+                  Full-service interior design for homes and penthouses — space
+                  planning, material selection, procurement, and end-to-end
+                  execution.
+                </p>
+              </div>
+            </Tilt>
+
+            <Tilt
+              max={10}
+              speed={500}
+              perspective={900}
+              glare={true}
+              maxGlare={0.15}
+              scale={1.03}
+              className="sv-card"
+            >
+              <div className="sv-card-refract" />
+              <div className="sv-card-body">
+                <div className="sv-num">02</div>
+                <h3 className="sv-name">Commercial</h3>
+                <p className="sv-desc">
+                  Brand-aligned interiors for offices, retail, restaurants, and
+                  hotels — designed to perform as well as they impress.
+                </p>
+              </div>
+            </Tilt>
+
+            <Tilt
+              max={10}
+              speed={500}
+              perspective={900}
+              glare={true}
+              maxGlare={0.15}
+              scale={1.03}
+              className="sv-card"
+            >
+              <div className="sv-card-refract" />
+              <div className="sv-card-body">
+                <div className="sv-num">03</div>
+                <h3 className="sv-name">Consultation</h3>
+                <p className="sv-desc">
+                  A focused session on layout, palette, and styling. Expert
+                  guidance for clients making decisions on their own terms.
+                </p>
+              </div>
+            </Tilt>
+          </div>
+
+          {/* --- Stats Cards --------------------------------- */}
+          <div id="stats">
+            <Tilt
+              max={8}
+              speed={500}
+              perspective={1000}
+              glare={true}
+              maxGlare={0.12}
+              className="stat-card"
+            >
+              <div className="stat-card-refract" />
+              <div className="stat-card-body">
+                <div className="stat-num">
+                  180<span className="stat-unit">+</span>
+                </div>
+                <div className="stat-label">Projects Completed</div>
+              </div>
+            </Tilt>
+
+            <Tilt
+              max={8}
+              speed={500}
+              perspective={1000}
+              glare={true}
+              maxGlare={0.12}
+              className="stat-card"
+            >
+              <div className="stat-card-refract" />
+              <div className="stat-card-body">
+                <div className="stat-num">
+                  12<span className="stat-unit"> yr</span>
+                </div>
+                <div className="stat-label">Years of Practice</div>
+              </div>
+            </Tilt>
+
+            <Tilt
+              max={8}
+              speed={500}
+              perspective={1000}
+              glare={true}
+              maxGlare={0.12}
+              className="stat-card"
+            >
+              <div className="stat-card-refract" />
+              <div className="stat-card-body">
+                <div className="stat-num">
+                  3<span className="stat-unit"> cities</span>
+                </div>
+                <div className="stat-label">Delhi · Mumbai · Bangalore</div>
+              </div>
+            </Tilt>
+          </div>
+        </section>
+
+        {/* --- Contact Section ------------------------------- */}
+        <section id="contact">
+          <div className="contact-inner">
+            <div className="contact-inner-refract" />
+            <div className="contact-inner-body">
+              <p className="ct-eye2">Start a conversation</p>
+              <h2 className="ct-head">Tell us about your space.</h2>
+              <form
+                className="ct-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  alert("Thank you for your enquiry. We will get back to you shortly.");
+                }}
+              >
+                <input type="text" placeholder="Your name" required />
+                <input type="email" placeholder="Email address" required />
+                <input
+                  type="text"
+                  placeholder="Project type — Residence / Office / Hospitality"
+                  required
+                />
+                <textarea
+                  placeholder="Tell us about the project — size, location, timeline, vision…"
+                  required
+                />
+                <button type="submit" className="btn-send">
+                  <div className="btn-send-refract" />
+                  <div className="btn-send-body">Send Enquiry</div>
+                </button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        {/* --- Footer ---------------------------------------- */}
+        <footer>
+          <span>&copy; 2025 VORA Design Studio</span>
+          <span>New Delhi &nbsp;·&nbsp; Mumbai &nbsp;·&nbsp; Bangalore</span>
+          <a href="mailto:hello@vorastudio.in">hello@vorastudio.in</a>
+        </footer>
+      </div>
     </>
   );
 }
