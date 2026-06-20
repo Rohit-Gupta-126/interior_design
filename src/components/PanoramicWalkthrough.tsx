@@ -310,6 +310,99 @@ export default function PanoramicWalkthrough() {
     handleResize();
     window.addEventListener("resize", handleResize);
 
+    // Touch Scroll Handling for Mobile/Tablet Touch Screens
+    let lastTouchY = 0;
+    let lastTouchTime = 0;
+    let velocityY = 0;
+    let isTouchActive = false;
+    let momentumFrameId = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        target.closest("textarea, input, .info-panel-body, .info-panel, .hotspot, button, a, .ip-close")
+      ) {
+        return;
+      }
+
+      const sy = window.scrollY;
+      const sTop = spacerEl.offsetTop;
+      const sH = spacerEl.offsetHeight;
+      const vh = window.innerHeight;
+      const denom = sH - vh;
+      const exitScroll = Math.max(0, sy - (sTop + denom));
+      if (exitScroll >= vh) {
+        return;
+      }
+
+      cancelAnimationFrame(momentumFrameId);
+      lastTouchY = e.touches[0].clientY;
+      lastTouchTime = performance.now();
+      velocityY = 0;
+      isTouchActive = true;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isTouchActive || e.touches.length !== 1) return;
+
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        target.closest("textarea, input, .info-panel-body, .info-panel, .hotspot, button, a, .ip-close")
+      ) {
+        return;
+      }
+
+      const touchY = e.touches[0].clientY;
+      const now = performance.now();
+      const deltaY = lastTouchY - touchY;
+      const deltaTime = now - lastTouchTime;
+
+      if (deltaTime > 0) {
+        const currentVelocity = deltaY / deltaTime;
+        velocityY = velocityY * 0.4 + currentVelocity * 0.6;
+      }
+
+      lastTouchY = touchY;
+      lastTouchTime = now;
+
+      if (deltaY !== 0) {
+        window.scrollBy(0, deltaY);
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+      }
+    };
+
+    const handleTouchEnd = () => {
+      if (!isTouchActive) return;
+      isTouchActive = false;
+
+      const amplitude = velocityY * 15;
+      if (Math.abs(amplitude) > 2) {
+        const timestamp = performance.now();
+        const duration = 800;
+        const timeConstant = 325;
+
+        const autoScroll = () => {
+          const elapsed = performance.now() - timestamp;
+          const delta = amplitude * Math.exp(-elapsed / timeConstant);
+          if (Math.abs(delta) > 0.5 && elapsed < duration) {
+            window.scrollBy(0, delta);
+            momentumFrameId = requestAnimationFrame(autoScroll);
+          }
+        };
+        momentumFrameId = requestAnimationFrame(autoScroll);
+      }
+    };
+
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { passive: false });
+    window.addEventListener("touchend", handleTouchEnd, { passive: true });
+
     let currentX = 0;
     let tiltY = 0;
     let activeRm = -1;
@@ -550,7 +643,11 @@ export default function PanoramicWalkthrough() {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("wheel", handleWheel);
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
       cancelAnimationFrame(animationFrameId);
+      cancelAnimationFrame(momentumFrameId);
     };
   }, [hintGone, isEntranceActive]);
 

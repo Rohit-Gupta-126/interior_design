@@ -29,7 +29,11 @@ export default function Tilt({
   const [canUseHoverPointer, setCanUseHoverPointer] = useState(false);
 
   useEffect(() => {
-    setCanUseHoverPointer(window.matchMedia("(hover: hover) and (pointer: fine)").matches);
+    const match = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    const frameId = requestAnimationFrame(() => {
+      setCanUseHoverPointer(match);
+    });
+    return () => cancelAnimationFrame(frameId);
   }, []);
 
   const handleMouseMove = useCallback(
@@ -59,7 +63,7 @@ export default function Tilt({
       el.style.transform = `perspective(${perspective}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(${scale}, ${scale}, ${scale})`;
       el.style.transition = "transform 0.1s ease";
     },
-    [max, perspective, scale]
+    [canUseHoverPointer, max, perspective, scale]
   );
 
   const handleMouseLeave = useCallback(() => {
