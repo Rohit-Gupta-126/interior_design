@@ -317,12 +317,19 @@ export default function PanoramicWalkthrough() {
     let isTouchActive = false;
     let momentumFrameId = 0;
 
+    const isTouchDevice = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+    if (isTouchDevice) {
+      walkFixed.style.setProperty("pointer-events", "auto", "important");
+      walkFixed.style.setProperty("touch-action", "pan-y", "important");
+    }
+
     const handleTouchStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) return;
 
       const target = e.target as HTMLElement | null;
       if (
         target &&
+        typeof target.closest === "function" &&
         target.closest("textarea, input, .info-panel-body, .info-panel, .hotspot, button, a, .ip-close")
       ) {
         return;
@@ -341,6 +348,7 @@ export default function PanoramicWalkthrough() {
       const target = e.target as HTMLElement | null;
       if (
         target &&
+        typeof target.closest === "function" &&
         target.closest("textarea, input, .info-panel-body, .info-panel, .hotspot, button, a, .ip-close")
       ) {
         return;
@@ -389,9 +397,11 @@ export default function PanoramicWalkthrough() {
       }
     };
 
-    window.addEventListener("touchstart", handleTouchStart, { passive: true });
-    window.addEventListener("touchmove", handleTouchMove, { passive: false });
-    window.addEventListener("touchend", handleTouchEnd, { passive: true });
+    if (isTouchDevice) {
+      walkFixed.addEventListener("touchstart", handleTouchStart, { passive: true });
+      walkFixed.addEventListener("touchmove", handleTouchMove, { passive: false });
+      walkFixed.addEventListener("touchend", handleTouchEnd, { passive: true });
+    }
 
     let currentX = 0;
     let tiltY = 0;
@@ -633,9 +643,11 @@ export default function PanoramicWalkthrough() {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("wheel", handleWheel);
-      window.removeEventListener("touchstart", handleTouchStart);
-      window.removeEventListener("touchmove", handleTouchMove);
-      window.removeEventListener("touchend", handleTouchEnd);
+      if (isTouchDevice) {
+        walkFixed.removeEventListener("touchstart", handleTouchStart);
+        walkFixed.removeEventListener("touchmove", handleTouchMove);
+        walkFixed.removeEventListener("touchend", handleTouchEnd);
+      }
       cancelAnimationFrame(animationFrameId);
       cancelAnimationFrame(momentumFrameId);
     };
