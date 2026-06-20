@@ -215,6 +215,7 @@ export default function PanoramicWalkthrough() {
   const dimRef = useRef<HTMLDivElement>(null);
 
   const hotspotRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const roomTextRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const [activePanelIndex, setActivePanelIndex] = useState<number | null>(null);
   const [hintGone, setHintGone] = useState(false);
@@ -222,8 +223,9 @@ export default function PanoramicWalkthrough() {
   const mny = useRef(0);
 
   useEffect(() => {
-    // Resize the ref array to fit the number of rooms
+    // Resize the ref arrays to fit the number of rooms
     hotspotRefs.current = hotspotRefs.current.slice(0, ROOMS.length);
+    roomTextRefs.current = roomTextRefs.current.slice(0, ROOMS.length);
 
     const handleMouseMove = (e: MouseEvent) => {
       mny.current = (e.clientY / window.innerHeight - 0.5) * 2;
@@ -291,7 +293,7 @@ export default function PanoramicWalkthrough() {
       let activeRmIdx = 0;
       let currentCx = 0;
 
-      // ── THREE-PHASE SCROLL MAPPING ──
+      // ── FOUR-PHASE SCROLL MAPPING ──
       // Phase A: Strip 1 horizontal pan (Panorama 1 + 2)
       if (p <= 0.55) {
         const t = p / 0.55;
@@ -312,9 +314,16 @@ export default function PanoramicWalkthrough() {
           activeRmIdx = 5; // Reading Corner (05)
         }
       }
-      // Phase B: Vertical transition to Strip 2 (Media Wall)
-      else if (p < 0.65) {
-        const t = (p - 0.55) / 0.10;
+      // Phase B: Hold on Room 5 so the lamp on the right is fully visible before vertical scrolling
+      else if (p <= 0.60) {
+        targetX = vw - 10417 * S;
+        targetY = 0;
+        currentCx = (vw * 0.5 - targetX) / S;
+        activeRmIdx = 5; // Reading Corner (05)
+      }
+      // Phase C: Vertical transition to Strip 2 (Media Wall)
+      else if (p < 0.70) {
+        const t = (p - 0.60) / 0.10;
         const xStart = vw - 10417 * S;
         const xEnd = vw - 6817 * S;
         targetX = (1 - t) * xStart + t * xEnd;
@@ -327,11 +336,11 @@ export default function PanoramicWalkthrough() {
           activeRmIdx = 6; // Media Wall (06)
         }
       }
-      // Phase C: Strip 2 horizontal pan (Panorama 3)
+      // Phase D: Strip 2 horizontal pan (Panorama 3)
       else {
-        // Complete pan by p = 0.88, then hold bedroom stationary till p = 1.0
-        if (p <= 0.88) {
-          const t = (p - 0.65) / 0.23;
+        // Complete pan by p = 0.90, then hold bedroom stationary till p = 1.0
+        if (p <= 0.90) {
+          const t = (p - 0.70) / 0.20;
           targetX = (1 - t) * (vw - 6817 * S) + t * (vw - 12217 * S);
         } else {
           targetX = vw - 12217 * S;
@@ -386,7 +395,7 @@ export default function PanoramicWalkthrough() {
 
         const isStrip1 = i < 6;
         const isStrip2 = i >= 6;
-        const currentStrip = p >= 0.65 ? 2 : (p <= 0.55 ? 1 : (activeRmIdx >= 6 ? 2 : 1));
+        const currentStrip = p >= 0.65 ? 2 : 1;
 
         let fade = 0;
         if (currentStrip === 1 && isStrip1) {
@@ -404,6 +413,36 @@ export default function PanoramicWalkthrough() {
 
         hs.style.opacity = String(fade);
         hs.classList.toggle("live", fade > 0.25);
+      });
+
+      // Update Room Text Opacity based on distance to screen center
+      roomTextRefs.current.forEach((rt, i) => {
+        if (!rt) return;
+        const room = ROOMS[i];
+        if (room.type !== "room") return;
+
+        const isStrip1 = i < 6;
+        const isStrip2 = i >= 6;
+        const currentStrip = p >= 0.65 ? 2 : 1;
+
+        let fade = 0;
+        if (currentStrip === 1 && isStrip1) {
+          const roomCenter = room.nativeX + 960;
+          const dist = Math.abs(roomCenter - currentCx);
+          // Only start appearing when viewport is within 900 native pixels of the room center
+          // and reach full opacity within 600 native pixels.
+          fade = Math.max(0, Math.min(1, (900 - dist) / 300));
+        } else if (currentStrip === 2 && isStrip2) {
+          const roomCenter = room.nativeX + 960;
+          const dist = Math.abs(roomCenter - currentCx);
+          fade = Math.max(0, Math.min(1, (900 - dist) / 300));
+        }
+
+        // Apply global exit fade
+        fade = fade * (1 - exitFade);
+
+        rt.style.opacity = String(fade);
+        rt.style.pointerEvents = fade > 0.1 ? "auto" : "none";
       });
 
       animationFrameId = requestAnimationFrame(loop);
@@ -477,7 +516,13 @@ export default function PanoramicWalkthrough() {
                     style={{ left: room.left, pointerEvents: "none" }}
                   >
                     {isRoom && (
-                      <div className="room-text" style={{ pointerEvents: "auto" }}>
+                      <div
+                        ref={(el) => {
+                          roomTextRefs.current[globalIndex] = el;
+                        }}
+                        className="room-text"
+                        style={{ pointerEvents: "auto" }}
+                      >
                         <p className="rt-tag">
                           {room.label} &nbsp;/&nbsp; 0{TOTAL_ROOMS}
                         </p>
@@ -528,7 +573,13 @@ export default function PanoramicWalkthrough() {
                     style={{ left: room.left, pointerEvents: "none" }}
                   >
                     {isRoom && (
-                      <div className="room-text" style={{ pointerEvents: "auto" }}>
+                      <div
+                        ref={(el) => {
+                          roomTextRefs.current[globalIndex] = el;
+                        }}
+                        className="room-text"
+                        style={{ pointerEvents: "auto" }}
+                      >
                         <p className="rt-tag">
                           {room.label} &nbsp;/&nbsp; 0{TOTAL_ROOMS}
                         </p>
