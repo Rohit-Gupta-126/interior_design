@@ -316,6 +316,7 @@ export default function PanoramicWalkthrough() {
     let velocityY = 0;
     let isTouchActive = false;
     let momentumFrameId = 0;
+    let accumulatedScrollY = 0;
 
     const isTouchDevice = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
     if (isTouchDevice) {
@@ -339,6 +340,7 @@ export default function PanoramicWalkthrough() {
       lastTouchY = e.touches[0].clientY;
       lastTouchTime = performance.now();
       velocityY = 0;
+      accumulatedScrollY = 0;
       isTouchActive = true;
     };
 
@@ -367,11 +369,16 @@ export default function PanoramicWalkthrough() {
       lastTouchY = touchY;
       lastTouchTime = now;
 
-      if (deltaY !== 0) {
-        window.scrollBy(0, deltaY);
-        if (e.cancelable) {
-          e.preventDefault();
-        }
+      accumulatedScrollY += deltaY;
+      const scrollAmount = Math.trunc(accumulatedScrollY);
+      accumulatedScrollY -= scrollAmount;
+
+      if (scrollAmount !== 0) {
+        window.scrollBy(0, scrollAmount);
+      }
+
+      if (e.cancelable) {
+        e.preventDefault();
       }
     };
 
@@ -384,12 +391,21 @@ export default function PanoramicWalkthrough() {
         const timestamp = performance.now();
         const duration = 800;
         const timeConstant = 325;
+        let accumulatedAutoScroll = 0;
 
         const autoScroll = () => {
           const elapsed = performance.now() - timestamp;
           const delta = amplitude * Math.exp(-elapsed / timeConstant);
+
+          accumulatedAutoScroll += delta;
+          const scrollAmount = Math.trunc(accumulatedAutoScroll);
+          accumulatedAutoScroll -= scrollAmount;
+
+          if (scrollAmount !== 0) {
+            window.scrollBy(0, scrollAmount);
+          }
+
           if (Math.abs(delta) > 0.5 && elapsed < duration) {
-            window.scrollBy(0, delta);
             momentumFrameId = requestAnimationFrame(autoScroll);
           }
         };
