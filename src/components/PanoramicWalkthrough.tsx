@@ -296,7 +296,16 @@ export default function PanoramicWalkthrough() {
     // Keep the spacer height exactly computed in pixels to avoid subpixel gap discrepancies
     const handleResize = () => {
       const vh = window.innerHeight;
-      spacerEl.style.height = `${20 * vh}px`;
+      const coarsePointer = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+      const spacerMultiplier = window.innerWidth <= 768
+        ? 12
+        : window.innerWidth <= 1024
+          ? 15
+          : coarsePointer
+            ? 14
+            : 20;
+
+      spacerEl.style.height = `${spacerMultiplier * vh}px`;
     };
     handleResize();
     window.addEventListener("resize", handleResize);

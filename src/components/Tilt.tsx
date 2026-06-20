@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 
 interface TiltProps extends React.HTMLAttributes<HTMLElement> {
   children: React.ReactNode;
@@ -26,9 +26,16 @@ export default function Tilt({
   ...props
 }: TiltProps) {
   const elementRef = useRef<HTMLElement>(null);
+  const [canUseHoverPointer, setCanUseHoverPointer] = useState(false);
+
+  useEffect(() => {
+    setCanUseHoverPointer(window.matchMedia("(hover: hover) and (pointer: fine)").matches);
+  }, []);
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
+      if (!canUseHoverPointer) return;
+
       const el = elementRef.current;
       if (!el) return;
 
@@ -56,18 +63,20 @@ export default function Tilt({
   );
 
   const handleMouseLeave = useCallback(() => {
+    if (!canUseHoverPointer) return;
+
     const el = elementRef.current;
     if (!el) return;
 
     el.style.transform = `perspective(${perspective}px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
     el.style.transition = `transform ${speed}ms ease`;
-  }, [perspective, speed]);
+  }, [canUseHoverPointer, perspective, speed]);
 
   return (
     <Component
       ref={elementRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
+      onMouseMove={canUseHoverPointer ? handleMouseMove : undefined}
+      onMouseLeave={canUseHoverPointer ? handleMouseLeave : undefined}
       style={{
         transformStyle: "preserve-3d",
         willChange: "transform",
@@ -76,7 +85,7 @@ export default function Tilt({
       {...props}
     >
       {children}
-      {glare && (
+      {canUseHoverPointer && glare && (
         <div
           className="glare-overlay"
           style={{

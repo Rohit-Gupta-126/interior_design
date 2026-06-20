@@ -6,6 +6,7 @@ import Tilt from "@/components/Tilt";
 
 export default function HomePage() {
   const [navbarClass, setNavbarClass] = useState("");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (window.scrollY !== 0) {
@@ -34,6 +35,17 @@ export default function HomePage() {
       clearTimeout(showContentTimer);
       clearTimeout(cleanupTimer);
     };
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 768) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   useEffect(() => {
@@ -71,7 +83,7 @@ export default function HomePage() {
 
   return (
     <>
-      <header className={`lg-wrap nav-lg-wrap ${navbarClass}`} role="banner">
+      <header className={`lg-wrap nav-lg-wrap ${navbarClass} ${mobileMenuOpen ? "nav-menu-open" : ""}`} role="banner">
         <div className="lg-refract" />
         <div className="lg-body nav-lg-body">
           <a href="#" className="nav-logo" aria-label="VORA home">
@@ -93,6 +105,35 @@ export default function HomePage() {
           </nav>
           <a href="#contact" className="nav-enquire">
             Enquire
+          </a>
+          <button
+            type="button"
+            className="nav-menu-toggle"
+            aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-nav-drawer"
+            onClick={() => setMobileMenuOpen((value) => !value)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+        </div>
+        <div
+          id="mobile-nav-drawer"
+          className={`nav-mobile-drawer ${mobileMenuOpen ? "open" : ""}`}
+        >
+          <a href="#" className="nav-mobile-link" onClick={() => setMobileMenuOpen(false)}>
+            Walkthrough
+          </a>
+          <a href="#about-wrap" className="nav-mobile-link" onClick={() => setMobileMenuOpen(false)}>
+            About
+          </a>
+          <a href="#services" className="nav-mobile-link" onClick={() => setMobileMenuOpen(false)}>
+            Services
+          </a>
+          <a href="#contact" className="nav-mobile-link" onClick={() => setMobileMenuOpen(false)}>
+            Contact
           </a>
         </div>
       </header>
@@ -275,23 +316,26 @@ export default function HomePage() {
               <h2 className="ct-head">Tell us about your space.</h2>
               <form
                 className="ct-form"
+                suppressHydrationWarning
                 onSubmit={(event) => {
                   event.preventDefault();
                   alert("Thank you for your enquiry. We will get back to you shortly.");
                 }}
               >
-                <input type="text" placeholder="Your name" required />
-                <input type="email" placeholder="Email address" required />
+                <input type="text" placeholder="Your name" required suppressHydrationWarning />
+                <input type="email" placeholder="Email address" required suppressHydrationWarning />
                 <input
                   type="text"
                   placeholder="Project type - Residence / Office / Hospitality"
                   required
+                  suppressHydrationWarning
                 />
                 <textarea
                   placeholder="Tell us about the project - size, location, timeline, vision..."
                   required
+                  suppressHydrationWarning
                 />
-                <button type="submit" className="btn-send">
+                <button type="submit" className="btn-send" suppressHydrationWarning>
                   <div className="btn-send-refract" />
                   <div className="btn-send-body">Send Enquiry</div>
                 </button>

@@ -9,6 +9,11 @@ export default function CustomCursor() {
   const ringCoords = useRef({ rx: 0, ry: 0 });
 
   useEffect(() => {
+    const canUseHoverPointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    if (!canUseHoverPointer) {
+      return;
+    }
+
     const cur = curRef.current;
     const ring = ringRef.current;
     if (!cur || !ring) return;

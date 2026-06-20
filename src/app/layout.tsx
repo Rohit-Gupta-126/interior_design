@@ -5,7 +5,7 @@
  * (clean UI sans-serif), and Orbitron for the VORA wordmark.
  */
 
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import CustomCursor from "@/components/CustomCursor";
 import LiquidGlassFilters from "@/components/LiquidGlassFilters";
@@ -70,6 +70,13 @@ export const metadata: Metadata = {
     description: "We design for the way you actually live.",
     type: "website",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#080808",
 };
 
 interface RootLayoutProps {
