@@ -325,15 +325,15 @@ export default function PanoramicWalkthrough() {
       else if (p < 0.78) {
         const t = (p - 0.68) / 0.10;
         const xStart = vw - 10417 * S;
-        const xEnd = vw - 6817 * S;
+        const xEnd = -6817 * S; // Prevent exposing blank space to the left of Room 6
         targetX = (1 - t) * xStart + t * xEnd;
         targetY = -t * vh;
-        currentCx = (1 - t) * 9457 + t * 7777; // Smoothly interpolate active room center during transition
+        currentCx = (vw * 0.5 - targetX) / S;
 
-        if (t < 0.5) {
-          activeRmIdx = 5; // Reading Corner (05)
-        } else {
+        if (currentCx < 8700) {
           activeRmIdx = 6; // Media Wall (06)
+        } else {
+          activeRmIdx = 5; // Reading Corner (05)
         }
       }
       // Phase D: Strip 2 horizontal pan (Panorama 3)
@@ -341,7 +341,7 @@ export default function PanoramicWalkthrough() {
         // Complete pan by p = 0.93, then hold bedroom stationary till p = 1.0
         if (p <= 0.93) {
           const t = (p - 0.78) / 0.15;
-          targetX = (1 - t) * (vw - 6817 * S) + t * (vw - 12217 * S);
+          targetX = (1 - t) * (-6817 * S) + t * (vw - 12217 * S);
         } else {
           targetX = vw - 12217 * S;
         }
