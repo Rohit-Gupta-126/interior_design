@@ -8,6 +8,8 @@ export default function LoadingScreen() {
   const [isFading, setIsFading] = useState(false);
 
   useEffect(() => {
+    let removeTimer: ReturnType<typeof setTimeout> | undefined;
+
     // Fill the loader progress bar after mount
     const progressTimer = setTimeout(() => {
       setProgress(100);
@@ -16,16 +18,17 @@ export default function LoadingScreen() {
     // Fade out loader after 1.9 seconds, matching HTML setTimeout
     const fadeTimer = setTimeout(() => {
       setIsFading(true);
-      // Wait for transition duration before removing from DOM
-      const removeTimer = setTimeout(() => {
+      removeTimer = setTimeout(() => {
         setIsVisible(false);
       }, 700);
-      return () => clearTimeout(removeTimer);
     }, 1900);
 
     return () => {
       clearTimeout(progressTimer);
       clearTimeout(fadeTimer);
+      if (removeTimer) {
+        clearTimeout(removeTimer);
+      }
     };
   }, []);
 

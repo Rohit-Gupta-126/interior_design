@@ -1,35 +1,60 @@
 /**
  * app/layout.tsx
  *
- * Root layout: loads Cormorant Garamond (editorial serif) and DM Sans
- * (clean UI sans-serif) via next/font/google using CSS variable injection.
- * Sets the global metadata and applies the near-black background.
+ * Root layout: loads Cormorant Garamond (editorial serif), Inter
+ * (clean UI sans-serif), and Orbitron for the VORA wordmark.
  */
 
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Inter } from "next/font/google";
-import "./vora.css";
+import localFont from "next/font/local";
+import CustomCursor from "@/components/CustomCursor";
+import LiquidGlassFilters from "@/components/LiquidGlassFilters";
 import LoadingScreen from "@/components/LoadingScreen";
+import "./vora.css";
 
-/* ── Cormorant Garamond — editorial heading font ── */
-const cormorant = Cormorant_Garamond({
-  weight: ["300", "400", "600", "700"],
-  style: ["normal", "italic"],
-  subsets: ["latin"],
+const cormorant = localFont({
+  src: [
+    {
+      path: "./fonts/cormorant-garamond-regular-latin.woff2",
+      weight: "300 700",
+      style: "normal",
+    },
+    {
+      path: "./fonts/cormorant-garamond-italic-latin.woff2",
+      weight: "300 700",
+      style: "italic",
+    },
+  ],
   display: "swap",
   variable: "--font-cormorant",
 });
 
-/* ── Inter — clean, minimal UI font ── */
-const inter = Inter({
-  weight: ["300", "400", "500", "600"],
-  subsets: ["latin"],
+const inter = localFont({
+  src: [
+    {
+      path: "./fonts/inter-latin.woff2",
+      weight: "300 600",
+      style: "normal",
+    },
+  ],
   display: "swap",
   variable: "--font-inter",
 });
 
+const orbitron = localFont({
+  src: [
+    {
+      path: "./fonts/orbitron-latin.woff2",
+      weight: "400 900",
+      style: "normal",
+    },
+  ],
+  display: "swap",
+  variable: "--font-orbitron",
+});
+
 export const metadata: Metadata = {
-  title: "VORA — Interior Design Studio",
+  title: "VORA - Interior Design Studio",
   description:
     "VORA is a boutique interior design practice working across India. We design for the way you actually live.",
   keywords: [
@@ -41,14 +66,11 @@ export const metadata: Metadata = {
     "India",
   ],
   openGraph: {
-    title: "VORA — Interior Design Studio",
+    title: "VORA - Interior Design Studio",
     description: "We design for the way you actually live.",
     type: "website",
   },
 };
-
-import CustomCursor from "@/components/CustomCursor";
-import LiquidGlassFilters from "@/components/LiquidGlassFilters";
 
 interface RootLayoutProps {
   children: React.ReactNode;
@@ -58,9 +80,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html
       lang="en"
-      /* Inject both font CSS variables onto the <html> element so
-         they are available everywhere via var(--font-cormorant) etc. */
-      className={`${cormorant.variable} ${inter.variable}`}
+      className={`${cormorant.variable} ${inter.variable} ${orbitron.variable}`}
     >
       <body>
         <LoadingScreen />

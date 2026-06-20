@@ -37,11 +37,11 @@ const ROOMS: RoomData[] = [
     info: {
       tag: "The Entrance Hall",
       title: "First impressions are made in stone.",
-      body: "A cantilevered roofline draws you in past clipped hedges toward a wall of glass. Inside, travertine and brushed bronze catch the last warm light of evening — the threshold between garden and home dissolves into a single composed frame.",
+      body: "A cantilevered roofline draws you in past clipped hedges toward a wall of glass. Inside, travertine and brushed bronze catch the last warm light of evening - the threshold between garden and home dissolves into a single composed frame.",
       details: [
         ["Facade", "Powder-coated Anthracite Panel"],
         ["Threshold", "Full-height Pivot Glass"],
-        ["Lighting", "Grazing Façade Wash"],
+        ["Lighting", "Grazing Facade Wash"],
         ["Landscaping", "Clipped Boxwood Hedge"],
       ],
     },
@@ -83,7 +83,7 @@ const ROOMS: RoomData[] = [
     info: {
       tag: "The Materials Library",
       title: "Every surface earns the right to stay.",
-      body: "A coopered walnut column stands sentinel beside a long shadow-gap cabinet, its concealed light spilling across a curated shelf of objects. Nothing here is decorative by accident — every piece on display was chosen, not arranged.",
+      body: "A coopered walnut column stands sentinel beside a long shadow-gap cabinet, its concealed light spilling across a curated shelf of objects. Nothing here is decorative by accident - every piece on display was chosen, not arranged.",
       details: [
         ["Column", "Coopered Walnut, Hand-finished"],
         ["Cabinetry", "Matte Lacquer, Shadow-gap Reveal"],
@@ -103,7 +103,7 @@ const ROOMS: RoomData[] = [
     info: {
       tag: "The Staircase",
       title: "A single gesture, cantilevered in air.",
-      body: "Blackened steel treads appear to float, held only by a hairline glass balustrade lit from above. There is no stringer, no visible support — just the quiet confidence of structure engineered to disappear.",
+      body: "Blackened steel treads appear to float, held only by a hairline glass balustrade lit from above. There is no stringer, no visible support - just the quiet confidence of structure engineered to disappear.",
       details: [
         ["Treads", "Blackened Steel, Floating"],
         ["Balustrade", "Hairline Low-Iron Glass"],
@@ -123,7 +123,7 @@ const ROOMS: RoomData[] = [
     info: {
       tag: "The Reading Corner",
       title: "One lamp, and the room softens.",
-      body: "A sculptural floor lamp casts a single warm sphere of light against an otherwise unbroken dark wall. It is the quietest moment in the house — proof that restraint, used well, is its own kind of luxury.",
+      body: "A sculptural floor lamp casts a single warm sphere of light against an otherwise unbroken dark wall. It is the quietest moment in the house - proof that restraint, used well, is its own kind of luxury.",
       details: [
         ["Fixture", "Sculptural Sphere Floor Lamp"],
         ["Wall Finish", "Matte Charcoal Plaster"],
@@ -143,7 +143,7 @@ const ROOMS: RoomData[] = [
     info: {
       tag: "The Media Wall",
       title: "Technology, kept out of sight.",
-      body: "A recessed console runs the width of the wall, lit from beneath so it appears to hover. The television sits flush against matte paneling, present only when switched on — everything else recedes into shadow.",
+      body: "A recessed console runs the width of the wall, lit from beneath so it appears to hover. The television sits flush against matte paneling, present only when switched on - everything else recedes into shadow.",
       details: [
         ["Console", "Floating, Recessed Plinth"],
         ["Panelling", "Matte Charcoal Shadow-box"],
@@ -169,7 +169,7 @@ const ROOMS: RoomData[] = [
     info: {
       tag: "The Courtyard Glass",
       title: "A wall of green, brought indoors.",
-      body: "A full-height glass partition slides away to dissolve the line between inside and out. Beyond it, a private planted courtyard does the work most rooms ask of art — it just needs to be looked at.",
+      body: "A full-height glass partition slides away to dissolve the line between inside and out. Beyond it, a private planted courtyard does the work most rooms ask of art - it just needs to be looked at.",
       details: [
         ["Partition", "Full-height Sliding Glass"],
         ["Landscaping", "Layered Native Planting"],
@@ -189,7 +189,7 @@ const ROOMS: RoomData[] = [
     info: {
       tag: "The Master Bedroom",
       title: "Where the day finally softens.",
-      body: "A low platform bed sits beneath a glowing amber-lit headboard wall, flanked by hand-woven pendant lights. Floor-to-ceiling glass opens onto a private screen of trees — the last room of the house, and the quietest.",
+      body: "A low platform bed sits beneath a glowing amber-lit headboard wall, flanked by hand-woven pendant lights. Floor-to-ceiling glass opens onto a private screen of trees - the last room of the house, and the quietest.",
       details: [
         ["Headboard", "Backlit Amber Recess"],
         ["Pendants", "Hand-woven Rattan Shade"],
@@ -236,8 +236,26 @@ export default function PanoramicWalkthrough() {
 
   const [activePanelIndex, setActivePanelIndex] = useState<number | null>(null);
   const [hintGone, setHintGone] = useState(false);
+  const [isEntranceActive, setIsEntranceActive] = useState(false);
 
   const mny = useRef(0);
+
+  useEffect(() => {
+    if (window.scrollY === 0) {
+      const startTimer = setTimeout(() => {
+        setIsEntranceActive(true);
+      }, 2000);
+
+      const endTimer = setTimeout(() => {
+        setIsEntranceActive(false);
+      }, 4800);
+
+      return () => {
+        clearTimeout(startTimer);
+        clearTimeout(endTimer);
+      };
+    }
+  }, []);
 
   useEffect(() => {
     // Resize the ref arrays to fit the number of rooms
@@ -249,6 +267,17 @@ export default function PanoramicWalkthrough() {
     };
 
     window.addEventListener("mousemove", handleMouseMove);
+
+    const handleWheel = (e: WheelEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && target.closest("textarea, input, .info-panel-body, .info-panel")) {
+        return;
+      }
+      e.preventDefault();
+      window.scrollBy(0, e.deltaY);
+    };
+
+    window.addEventListener("wheel", handleWheel, { passive: false });
 
     const spacerEl = spacerRef.current;
     const walkFixed = walkFixedRef.current;
@@ -263,6 +292,14 @@ export default function PanoramicWalkthrough() {
     if (!spacerEl || !walkFixed || !pano || !panoStage || !progFill || !scrollHint || !roomLabel || !rlNum || !rlName) {
       return;
     }
+
+    // Keep the spacer height exactly computed in pixels to avoid subpixel gap discrepancies
+    const handleResize = () => {
+      const vh = window.innerHeight;
+      spacerEl.style.height = `${20 * vh}px`;
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
 
     let currentX = 0;
     let tiltY = 0;
@@ -302,7 +339,7 @@ export default function PanoramicWalkthrough() {
 
       exitFade = Math.max(0, Math.min(1, exitScroll / vh));
       walkFixed.style.opacity = String(1 - exitFade);
-      walkFixed.style.pointerEvents = exitScroll >= vh ? "none" : "auto";
+      walkFixed.style.pointerEvents = "none";
 
       inW = raw >= -0.01 && raw <= 1.10;
       walkFixed.classList.toggle("hidden", exitScroll >= vh);
@@ -312,7 +349,7 @@ export default function PanoramicWalkthrough() {
         scrollHint.classList.add("gone");
       }
 
-      roomLabel.classList.toggle("on", inW && p > 0.005 && exitFade < 0.5);
+      roomLabel.classList.toggle("on", inW && (p > 0.005 || !isEntranceActive) && exitFade < 0.5);
 
       const S = vh / 1080.0;
 
@@ -456,6 +493,11 @@ export default function PanoramicWalkthrough() {
         // Apply global exit fade
         fade = fade * (1 - exitFade);
 
+        // Keep the Reading Corner hotspot reliably usable while it is the active scene.
+        if (i === 5 && activeRmIdx === 5 && fade < 0.9) {
+          fade = 0.9;
+        }
+
         hs.style.opacity = String(fade);
         hs.classList.toggle("live", fade > 0.25);
       });
@@ -497,9 +539,11 @@ export default function PanoramicWalkthrough() {
 
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("wheel", handleWheel);
       cancelAnimationFrame(animationFrameId);
     };
-  }, [hintGone]);
+  }, [hintGone, isEntranceActive]);
 
   const openInfo = (index: number) => {
     setActivePanelIndex(index);
@@ -515,7 +559,12 @@ export default function PanoramicWalkthrough() {
         <div id="prog-fill" />
       </div>
 
-      <div id="room-label" ref={roomLabelRef} style={{ top: "32%" }}>
+      <div
+        id="room-label"
+        ref={roomLabelRef}
+        className={isEntranceActive ? "room-label-entrance" : ""}
+        style={{ top: "32%" }}
+      >
         <div id="rl-num" ref={rlNumRef}>01</div>
         <div id="rl-name" ref={rlNameRef}>Entrance</div>
       </div>
@@ -530,7 +579,11 @@ export default function PanoramicWalkthrough() {
       {/* --- Walkthrough Fixed Viewport ------------------------- */}
       <div id="walk-fixed" ref={walkFixedRef}>
         <div id="pano-stage" ref={panoStageRef}>
-          <div id="pano" ref={panoRef}>
+          <div
+            className={isEntranceActive ? "pano-entrance-wrapper" : ""}
+            style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }}
+          >
+            <div id="pano" ref={panoRef}>
             {/* Strip 1: Slices 1 to 6 */}
             <div className="pano-strip strip-1">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -566,13 +619,15 @@ export default function PanoramicWalkthrough() {
                           roomTextRefs.current[globalIndex] = el;
                         }}
                         className="room-text"
-                        style={{ pointerEvents: "auto" }}
+                        style={{ pointerEvents: "none" }}
                       >
-                        <p className="rt-tag">
-                          {room.label} &nbsp;/&nbsp; 0{TOTAL_ROOMS}
-                        </p>
-                        <h2 className="rt-title">{room.name}</h2>
-                        <p className="rt-sub">Discover the space &nbsp;&#8599;</p>
+                        <div className={globalIndex === 0 && isEntranceActive ? "rt-entrance-inner" : ""}>
+                          <p className="rt-tag">
+                            {room.label} &nbsp;/&nbsp; 0{TOTAL_ROOMS}
+                          </p>
+                          <h2 className="rt-title">{room.name}</h2>
+                          <p className="rt-sub">Discover the space &nbsp;&#8599;</p>
+                        </div>
                       </div>
                     )}
                     {isRoom && room.hotspot && (
@@ -580,16 +635,67 @@ export default function PanoramicWalkthrough() {
                         ref={(el) => {
                           hotspotRefs.current[globalIndex] = el;
                         }}
-                        className="hotspot"
+                        className={`hotspot ${activePanelIndex === globalIndex ? "open" : ""}`}
                         style={{
                           left: `${room.hotspot.rx * 100}%`,
                           top: `${room.hotspot.ry * 100}%`,
                           pointerEvents: "auto",
                         }}
-                        onClick={() => openInfo(globalIndex)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (activePanelIndex === globalIndex) {
+                            closeInfo();
+                          } else {
+                            openInfo(globalIndex);
+                          }
+                        }}
                       >
-                        <div className="hs-ring" />
-                        <div className="hs-core">&#9670;</div>
+                        <div className="hs-dot">
+                          <div className="hs-inner-dot" />
+                        </div>
+                        {room.info && (
+                          <div className={`hotspot-callout ${room.hotspot.rx > 0.7 ? "callout-left" : "callout-right"}`}>
+                            <svg className="callout-svg-line" viewBox="0 0 100 50">
+                              <path
+                                className="callout-line-path"
+                                d={room.hotspot.rx > 0.7 
+                                  ? "M 100 50 L 40 0 L 0 0" 
+                                  : "M 0 50 L 60 0 L 100 0"
+                                }
+                              />
+                            </svg>
+                            <div className="lg-wrap info-card">
+                              <div className="lg-refract" />
+                              <div className="lg-body info-card-body">
+                                <button
+                                  className="ip-close"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    closeInfo();
+                                  }}
+                                  suppressHydrationWarning
+                                >
+                                  &#x2715;
+                                </button>
+                                <div className="ic-content">
+                                  <div className="ic-header">
+                                    <span className="ic-tag">{room.info.tag}</span>
+                                    <h3 className="ic-title">{room.info.title}</h3>
+                                  </div>
+                                  <p className="ic-body">{room.info.body}</p>
+                                  <div className="ic-details">
+                                    {room.info.details.map(([key, val], idx) => (
+                                      <div key={idx} className="ic-detail-row">
+                                        <span className="ic-detail-key">{key}</span>
+                                        <span className="ic-detail-val">{val}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -623,7 +729,7 @@ export default function PanoramicWalkthrough() {
                           roomTextRefs.current[globalIndex] = el;
                         }}
                         className="room-text"
-                        style={{ pointerEvents: "auto" }}
+                        style={{ pointerEvents: "none" }}
                       >
                         <p className="rt-tag">
                           {room.label} &nbsp;/&nbsp; 0{TOTAL_ROOMS}
@@ -637,22 +743,74 @@ export default function PanoramicWalkthrough() {
                         ref={(el) => {
                           hotspotRefs.current[globalIndex] = el;
                         }}
-                        className="hotspot"
+                        className={`hotspot ${activePanelIndex === globalIndex ? "open" : ""}`}
                         style={{
                           left: `${room.hotspot.rx * 100}%`,
                           top: `${room.hotspot.ry * 100}%`,
                           pointerEvents: "auto",
                         }}
-                        onClick={() => openInfo(globalIndex)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (activePanelIndex === globalIndex) {
+                            closeInfo();
+                          } else {
+                            openInfo(globalIndex);
+                          }
+                        }}
                       >
-                        <div className="hs-ring" />
-                        <div className="hs-core">&#9670;</div>
+                        <div className="hs-dot">
+                          <div className="hs-inner-dot" />
+                        </div>
+                        {room.info && (
+                          <div className={`hotspot-callout ${room.hotspot.rx > 0.7 ? "callout-left" : "callout-right"}`}>
+                            <svg className="callout-svg-line" viewBox="0 0 100 50">
+                              <path
+                                className="callout-line-path"
+                                d={room.hotspot.rx > 0.7 
+                                  ? "M 100 50 L 40 0 L 0 0" 
+                                  : "M 0 50 L 60 0 L 100 0"
+                                }
+                              />
+                            </svg>
+                            <div className="lg-wrap info-card">
+                              <div className="lg-refract" />
+                              <div className="lg-body info-card-body">
+                                <button
+                                  className="ip-close"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    closeInfo();
+                                  }}
+                                  suppressHydrationWarning
+                                >
+                                  &#x2715;
+                                </button>
+                                <div className="ic-content">
+                                  <div className="ic-header">
+                                    <span className="ic-tag">{room.info.tag}</span>
+                                    <h3 className="ic-title">{room.info.title}</h3>
+                                  </div>
+                                  <p className="ic-body">{room.info.body}</p>
+                                  <div className="ic-details">
+                                    {room.info.details.map(([key, val], idx) => (
+                                      <div key={idx} className="ic-detail-row">
+                                        <span className="ic-detail-key">{key}</span>
+                                        <span className="ic-detail-val">{val}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
                 );
               })}
             </div>
+          </div>
           </div>
         </div>
       </div>
@@ -667,11 +825,11 @@ export default function PanoramicWalkthrough() {
           return (
             <div
               key={`panel-${ri}`}
-              className={`info-panel ${activePanelIndex === ri ? "open" : ""}`}
+              className={`lg-wrap info-panel ${activePanelIndex === ri ? "open" : ""}`}
             >
-              <div className="info-panel-refract" />
-              <div className="info-panel-body">
-                <button className="ip-close" onClick={closeInfo}>
+              <div className="lg-refract info-panel-refract" />
+              <div className="lg-body info-panel-body">
+                <button className="ip-close" onClick={closeInfo} suppressHydrationWarning>
                   &#x2715;
                 </button>
                 
