@@ -230,15 +230,64 @@ export default function PanoramicWalkthrough() {
   const rlNumRef = useRef<HTMLDivElement>(null);
   const rlNameRef = useRef<HTMLDivElement>(null);
   const dimRef = useRef<HTMLDivElement>(null);
+  const panelsRef = useRef<HTMLDivElement>(null);
 
   const hotspotRefs = useRef<(HTMLDivElement | null)[]>([]);
   const roomTextRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const [activePanelIndex, setActivePanelIndex] = useState<number | null>(null);
+  const [closingPanelIndex, setClosingPanelIndex] = useState<number | null>(null);
+  const activePanelIndexRef = useRef<number | null>(null);
+  const closingPanelIndexRef = useRef<number | null>(null);
   const [hintGone, setHintGone] = useState(false);
   const [isEntranceActive, setIsEntranceActive] = useState(false);
+  const [exited, setExited] = useState(false);
 
   const mny = useRef(0);
+
+  const openInfo = (index: number) => {
+    setActivePanelIndex(index);
+    activePanelIndexRef.current = index;
+  };
+
+  const closeInfo = () => {
+    const currentActive = activePanelIndexRef.current;
+    if (currentActive !== null) {
+      const closingIdx = currentActive;
+      setClosingPanelIndex(closingIdx);
+      closingPanelIndexRef.current = closingIdx;
+
+      setActivePanelIndex(null);
+      activePanelIndexRef.current = null;
+
+      setTimeout(() => {
+        setClosingPanelIndex(null);
+        closingPanelIndexRef.current = null;
+      }, 550);
+    }
+  };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const sy = window.scrollY;
+      const sTop = spacerRef.current?.offsetTop || 0;
+      const sH = spacerRef.current?.offsetHeight || 0;
+      const vh = window.innerHeight;
+      const denom = sH - vh;
+      const exitScroll = Math.max(0, sy - (sTop + denom));
+      
+      const checkTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+      const shouldHide = checkTouch ? (exitScroll > 0) : (exitScroll >= vh);
+      setExited(shouldHide);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
 
   useEffect(() => {
     if (window.scrollY === 0) {
@@ -288,8 +337,10 @@ export default function PanoramicWalkthrough() {
     const roomLabel = roomLabelRef.current;
     const rlNum = rlNumRef.current;
     const rlName = rlNameRef.current;
+    const panels = panelsRef.current;
+    const dim = dimRef.current;
 
-    if (!spacerEl || !walkFixed || !pano || !panoStage || !progFill || !scrollHint || !roomLabel || !rlNum || !rlName) {
+    if (!spacerEl || !walkFixed || !pano || !panoStage || !progFill || !scrollHint || !roomLabel || !rlNum || !rlName || !panels || !dim) {
       return;
     }
 
@@ -311,6 +362,7 @@ export default function PanoramicWalkthrough() {
     window.addEventListener("resize", handleResize);
 
     // Touch Scroll Handling for Mobile/Tablet Touch Screens
+    let lastTouchX = 0;
     let lastTouchY = 0;
     let lastTouchTime = 0;
     let velocityY = 0;
@@ -318,14 +370,24 @@ export default function PanoramicWalkthrough() {
     let momentumFrameId = 0;
     let accumulatedScrollY = 0;
 
-    const isTouchDevice = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+    const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
     if (isTouchDevice) {
-      walkFixed.style.setProperty("pointer-events", "auto", "important");
-      walkFixed.style.setProperty("touch-action", "none", "important");
+      walkFixed.style.setProperty("pointer-events", "auto");
+      walkFixed.style.setProperty("touch-action", "none");
     }
+
+    const getExitScroll = () => {
+      const sy = window.scrollY;
+      const sTop = spacerEl?.offsetTop || 0;
+      const sH = spacerEl?.offsetHeight || 0;
+      const vh = window.innerHeight;
+      const denom = sH - vh;
+      return Math.max(0, sy - (sTop + denom));
+    };
 
     const handleTouchStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) return;
+      if (getExitScroll() > 0) return;
 
       const target = e.target as HTMLElement | null;
       if (
@@ -337,6 +399,7 @@ export default function PanoramicWalkthrough() {
       }
 
       cancelAnimationFrame(momentumFrameId);
+      lastTouchX = e.touches[0].clientX;
       lastTouchY = e.touches[0].clientY;
       lastTouchTime = performance.now();
       velocityY = 0;
@@ -356,20 +419,36 @@ export default function PanoramicWalkthrough() {
         return;
       }
 
+      const touchX = e.touches[0].clientX;
       const touchY = e.touches[0].clientY;
       const now = performance.now();
+      
+      const deltaX = lastTouchX - touchX;
       const deltaY = lastTouchY - touchY;
       const deltaTime = now - lastTouchTime;
 
+      // We determine which direction is dominant to scale/translate correctly.
+      // Swiping horizontally pans the panorama (translates to vertical scroll of the window).
+      // Swiping vertically scrolls the page.
+      // We combine both deltas to scroll the window.
+      // For horizontal swipes, we apply a factor (e.g. 1.35) for better responsiveness.
+      let scrollDelta = 0;
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        scrollDelta = deltaX * 1.35;
+      } else {
+        scrollDelta = deltaY;
+      }
+
       if (deltaTime > 0) {
-        const currentVelocity = deltaY / deltaTime;
+        const currentVelocity = scrollDelta / deltaTime;
         velocityY = velocityY * 0.4 + currentVelocity * 0.6;
       }
 
+      lastTouchX = touchX;
       lastTouchY = touchY;
       lastTouchTime = now;
 
-      accumulatedScrollY += deltaY;
+      accumulatedScrollY += scrollDelta;
       const scrollAmount = Math.trunc(accumulatedScrollY);
       accumulatedScrollY -= scrollAmount;
 
@@ -457,10 +536,46 @@ export default function PanoramicWalkthrough() {
 
       exitFade = Math.max(0, Math.min(1, exitScroll / vh));
       walkFixed.style.opacity = String(1 - exitFade);
-      walkFixed.style.pointerEvents = "none";
+      const isHidden = exitScroll >= vh;
+      walkFixed.classList.toggle("hidden", isHidden);
+
+      if (exitScroll > 0 && activePanelIndexRef.current !== null) {
+        setTimeout(() => {
+          closeInfo();
+        }, 0);
+      }
+
+      if (isHidden) {
+        walkFixed.style.display = "none";
+        walkFixed.style.pointerEvents = "none";
+        walkFixed.style.touchAction = "auto";
+        panels.style.display = "none";
+        dim.style.display = "none";
+        roomLabel.style.display = "none";
+        scrollHint.style.display = "none";
+      } else {
+        if (exitScroll > 0) {
+          walkFixed.style.display = isTouchDevice ? "none" : "";
+          walkFixed.style.pointerEvents = "none";
+          walkFixed.style.touchAction = "auto";
+          panels.style.display = "none";
+          dim.style.display = "none";
+          roomLabel.style.display = isTouchDevice ? "none" : "";
+          scrollHint.style.display = isTouchDevice ? "none" : "";
+        } else {
+          walkFixed.style.display = "";
+          roomLabel.style.display = "";
+          scrollHint.style.display = "";
+          walkFixed.style.pointerEvents = isTouchDevice ? "auto" : "none";
+          walkFixed.style.touchAction = isTouchDevice ? "none" : "auto";
+
+          const isAnyPanelVisible = activePanelIndexRef.current !== null || closingPanelIndexRef.current !== null;
+          panels.style.display = isAnyPanelVisible ? "" : "none";
+          dim.style.display = isAnyPanelVisible ? "" : "none";
+        }
+      }
 
       inW = raw >= -0.01 && raw <= 1.10;
-      walkFixed.classList.toggle("hidden", exitScroll >= vh);
 
       if (sy > 60 && !hintGone) {
         setHintGone(true);
@@ -669,17 +784,10 @@ export default function PanoramicWalkthrough() {
     };
   }, [hintGone, isEntranceActive]);
 
-  const openInfo = (index: number) => {
-    setActivePanelIndex(index);
-  };
-
-  const closeInfo = () => {
-    setActivePanelIndex(null);
-  };
 
   return (
     <>
-      <div id="prog" ref={progFillRef}>
+      <div id="prog" ref={progFillRef} style={{ display: exited ? "none" : "" }}>
         <div id="prog-fill" />
       </div>
 
@@ -687,21 +795,27 @@ export default function PanoramicWalkthrough() {
         id="room-label"
         ref={roomLabelRef}
         className={isEntranceActive ? "room-label-entrance" : ""}
-        style={{ top: "32%" }}
+        style={{ top: "32%", display: exited ? "none" : "" }}
       >
         <div id="rl-num" ref={rlNumRef}>01</div>
         <div id="rl-name" ref={rlNameRef}>Entrance</div>
       </div>
 
-      <div id="dim" ref={dimRef} className={activePanelIndex !== null ? "on" : ""} onClick={closeInfo} />
+      <div
+        id="dim"
+        ref={dimRef}
+        className={activePanelIndex !== null ? "on" : ""}
+        onClick={closeInfo}
+        style={{ display: exited ? "none" : "" }}
+      />
 
-      <div id="scroll-hint" ref={scrollHintRef}>
+      <div id="scroll-hint" ref={scrollHintRef} style={{ display: exited ? "none" : "" }}>
         <span className="sh-text">Scroll to walk through</span>
         <div className="sh-line" />
       </div>
 
       {/* --- Walkthrough Fixed Viewport ------------------------- */}
-      <div id="walk-fixed" ref={walkFixedRef}>
+      <div id="walk-fixed" ref={walkFixedRef} style={{ display: exited ? "none" : "" }}>
         <div id="pano-stage" ref={panoStageRef}>
           <div
             className={isEntranceActive ? "pano-entrance-wrapper" : ""}
@@ -943,7 +1057,12 @@ export default function PanoramicWalkthrough() {
       <div id="walk-spacer" ref={spacerRef} />
 
       {/* --- Info Panels Layer --------------------------------- */}
-      <div id="panels">
+      <div
+        id="panels"
+        ref={panelsRef}
+        className={(activePanelIndex !== null || closingPanelIndex !== null) ? "open" : ""}
+        style={{ display: exited ? "none" : "" }}
+      >
         {ROOMS.map((room, ri) => {
           if (!room.info) return null;
           return (

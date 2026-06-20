@@ -12,6 +12,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  allowedDevOrigins: ["192.168.29.29"],
 
   images: {
     /* Next.js 16 requires an explicit qualities allowlist.
