@@ -288,13 +288,24 @@ export default function PanoramicWalkthrough() {
       const raw = denom > 0 ? (sy - sTop) / denom : 0;
       const p = Math.max(0, Math.min(1, raw));
 
-      // Fade out walkthrough as we exit (from raw = 1.0 to 1.25)
-      exitFade = Math.max(0, Math.min(1, (raw - 1.0) / 0.25));
-      walkFixed.style.opacity = String(1 - exitFade);
-      walkFixed.style.pointerEvents = exitFade >= 0.99 ? "none" : "auto";
+      // Calculate exit scroll past the walkthrough
+      const exitScroll = Math.max(0, sy - (sTop + denom));
+      
+      // Translate the walkthrough and room label up matching the scroll speed
+      if (exitScroll > 0) {
+        walkFixed.style.transform = `translateY(${-exitScroll}px)`;
+        roomLabel.style.transform = `translateY(${-exitScroll}px) translateY(-50%)`;
+      } else {
+        walkFixed.style.transform = "";
+        roomLabel.style.transform = "";
+      }
 
-      inW = raw >= -0.01 && raw <= 1.30;
-      walkFixed.classList.toggle("hidden", raw > 1.29);
+      exitFade = Math.max(0, Math.min(1, exitScroll / vh));
+      walkFixed.style.opacity = String(1 - exitFade);
+      walkFixed.style.pointerEvents = exitScroll >= vh ? "none" : "auto";
+
+      inW = raw >= -0.01 && raw <= 1.10;
+      walkFixed.classList.toggle("hidden", exitScroll >= vh);
 
       if (sy > 60 && !hintGone) {
         setHintGone(true);
