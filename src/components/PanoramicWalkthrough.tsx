@@ -315,15 +315,15 @@ export default function PanoramicWalkthrough() {
         }
       }
       // Phase B: Hold on Room 5 so the lamp on the right is fully visible before vertical scrolling
-      else if (p <= 0.68) {
+      else if (p <= 0.64) {
         targetX = vw - 10417 * S;
         targetY = 0;
         currentCx = (vw * 0.5 - targetX) / S;
         activeRmIdx = 5; // Reading Corner (05)
       }
       // Phase C: Vertical transition to Strip 2 (Media Wall)
-      else if (p < 0.78) {
-        const t = (p - 0.68) / 0.10;
+      else if (p < 0.74) {
+        const t = (p - 0.64) / 0.10;
         const xStart = vw - 10417 * S;
         const xEnd = -6817 * S; // Prevent exposing blank space to the left of Room 6
         targetX = (1 - t) * xStart + t * xEnd;
@@ -338,9 +338,11 @@ export default function PanoramicWalkthrough() {
       }
       // Phase D: Strip 2 horizontal pan (Panorama 3)
       else {
-        // Complete pan by p = 0.93, then hold bedroom stationary till p = 1.0
-        if (p <= 0.93) {
-          const t = (p - 0.78) / 0.15;
+        // Hold on TV Scene (Room 6) first to prevent skipping, then pan
+        if (p <= 0.84) {
+          targetX = -6817 * S;
+        } else if (p <= 0.94) {
+          const t = (p - 0.84) / 0.10;
           targetX = (1 - t) * (-6817 * S) + t * (vw - 12217 * S);
         } else {
           targetX = vw - 12217 * S;
@@ -395,7 +397,7 @@ export default function PanoramicWalkthrough() {
 
         const isStrip1 = i < 6;
         const isStrip2 = i >= 6;
-        const currentStrip = p >= 0.73 ? 2 : 1;
+        const currentStrip = p >= 0.69 ? 2 : 1;
 
         let fade = 0;
         if (currentStrip === 1 && isStrip1) {
@@ -423,7 +425,7 @@ export default function PanoramicWalkthrough() {
 
         const isStrip1 = i < 6;
         const isStrip2 = i >= 6;
-        const currentStrip = p >= 0.73 ? 2 : 1;
+        const currentStrip = p >= 0.69 ? 2 : 1;
 
         let fade = 0;
         if (currentStrip === 1 && isStrip1) {
