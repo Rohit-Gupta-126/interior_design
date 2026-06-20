@@ -275,7 +275,7 @@ body.hovering #cur-ring{opacity:0}
 #prog-fill{height:100%;width:0;background:linear-gradient(90deg,var(--gold),rgba(201,169,110,.4))}
 
 /* ── ROOM LABEL ── */
-#room-label{position:fixed;top:50%;right:52px;transform:translateY(-50%);z-index:900;pointer-events:none;text-align:right;opacity:0;transition:opacity .5s}
+#room-label{position:fixed;top:35%;right:52px;transform:translateY(-50%);z-index:900;pointer-events:none;text-align:right;opacity:0;transition:opacity .5s}
 #room-label.on{opacity:1}
 #rl-num{font-family:var(--font-cormorant),serif;font-size:clamp(5rem,10vw,9rem);font-weight:300;color:rgba(255,255,255,.04);line-height:1}
 #rl-name{font-size:.64rem;letter-spacing:.26em;text-transform:uppercase;color:rgba(201,169,110,.5);margin-top:-8px}
