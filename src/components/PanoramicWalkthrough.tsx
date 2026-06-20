@@ -328,16 +328,6 @@ export default function PanoramicWalkthrough() {
         return;
       }
 
-      const sy = window.scrollY;
-      const sTop = spacerEl.offsetTop;
-      const sH = spacerEl.offsetHeight;
-      const vh = window.innerHeight;
-      const denom = sH - vh;
-      const exitScroll = Math.max(0, sy - (sTop + denom));
-      if (exitScroll >= vh) {
-        return;
-      }
-
       cancelAnimationFrame(momentumFrameId);
       lastTouchY = e.touches[0].clientY;
       lastTouchTime = performance.now();
