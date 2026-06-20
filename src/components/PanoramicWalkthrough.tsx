@@ -295,8 +295,8 @@ export default function PanoramicWalkthrough() {
 
       // ── FOUR-PHASE SCROLL MAPPING ──
       // Phase A: Strip 1 horizontal pan (Panorama 1 + 2)
-      if (p <= 0.55) {
-        const t = p / 0.55;
+      if (p <= 0.50) {
+        const t = p / 0.50;
         targetX = t * (vw - 10417 * S);
         targetY = 0;
         currentCx = (vw * 0.5 - targetX) / S;
@@ -315,15 +315,15 @@ export default function PanoramicWalkthrough() {
         }
       }
       // Phase B: Hold on Room 5 so the lamp on the right is fully visible before vertical scrolling
-      else if (p <= 0.60) {
+      else if (p <= 0.68) {
         targetX = vw - 10417 * S;
         targetY = 0;
         currentCx = (vw * 0.5 - targetX) / S;
         activeRmIdx = 5; // Reading Corner (05)
       }
       // Phase C: Vertical transition to Strip 2 (Media Wall)
-      else if (p < 0.70) {
-        const t = (p - 0.60) / 0.10;
+      else if (p < 0.78) {
+        const t = (p - 0.68) / 0.10;
         const xStart = vw - 10417 * S;
         const xEnd = vw - 6817 * S;
         targetX = (1 - t) * xStart + t * xEnd;
@@ -338,9 +338,9 @@ export default function PanoramicWalkthrough() {
       }
       // Phase D: Strip 2 horizontal pan (Panorama 3)
       else {
-        // Complete pan by p = 0.90, then hold bedroom stationary till p = 1.0
-        if (p <= 0.90) {
-          const t = (p - 0.70) / 0.20;
+        // Complete pan by p = 0.93, then hold bedroom stationary till p = 1.0
+        if (p <= 0.93) {
+          const t = (p - 0.78) / 0.15;
           targetX = (1 - t) * (vw - 6817 * S) + t * (vw - 12217 * S);
         } else {
           targetX = vw - 12217 * S;
@@ -395,7 +395,7 @@ export default function PanoramicWalkthrough() {
 
         const isStrip1 = i < 6;
         const isStrip2 = i >= 6;
-        const currentStrip = p >= 0.65 ? 2 : 1;
+        const currentStrip = p >= 0.73 ? 2 : 1;
 
         let fade = 0;
         if (currentStrip === 1 && isStrip1) {
@@ -423,7 +423,7 @@ export default function PanoramicWalkthrough() {
 
         const isStrip1 = i < 6;
         const isStrip2 = i >= 6;
-        const currentStrip = p >= 0.65 ? 2 : 1;
+        const currentStrip = p >= 0.73 ? 2 : 1;
 
         let fade = 0;
         if (currentStrip === 1 && isStrip1) {
