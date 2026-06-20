@@ -281,7 +281,7 @@ body.hovering #cur-ring{opacity:0}
 #rl-name{font-size:.64rem;letter-spacing:.26em;text-transform:uppercase;color:rgba(201,169,110,.5);margin-top:-8px}
 
 /* ── WALKTHROUGH ── */
-#walk-spacer{height:1300vh}
+#walk-spacer{height:2000vh}
 #walk-fixed{
   position:fixed;top:0;left:0;width:100vw;height:100vh;overflow:hidden;z-index:10;background:var(--dark);transition:opacity .6s ease;
 }

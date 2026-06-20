@@ -202,6 +202,23 @@ const ROOMS: RoomData[] = [
 
 const TOTAL_ROOMS = ROOMS.filter((r) => r.type === "room").length;
 
+interface Keyframe {
+  p: number;
+  cx: number;
+}
+
+function interpolateKeyframes(p: number, keyframes: Keyframe[]): number {
+  let i = 0;
+  while (i < keyframes.length - 1 && p > keyframes[i + 1].p) {
+    i++;
+  }
+  const k1 = keyframes[i];
+  const k2 = keyframes[i + 1];
+  if (!k2) return k1.cx;
+  const t = (p - k1.p) / (k2.p - k1.p || 1);
+  return k1.cx + t * (k2.cx - k1.cx);
+}
+
 export default function PanoramicWalkthrough() {
   const walkFixedRef = useRef<HTMLDivElement>(null);
   const spacerRef = useRef<HTMLDivElement>(null);
@@ -293,13 +310,25 @@ export default function PanoramicWalkthrough() {
       let activeRmIdx = 0;
       let currentCx = 0;
 
+      const cxEndStrip1 = 10417 - (vw * 0.5 / S);
+      const cxStartStrip2 = 6817 + (vw * 0.5 / S);
+      const cxEndStrip2 = 12217 - (vw * 0.5 / S);
+
       // ── FOUR-PHASE SCROLL MAPPING ──
       // Phase A: Strip 1 horizontal pan (Panorama 1 + 2)
       if (p <= 0.50) {
-        const t = p / 0.50;
-        targetX = t * (vw - 10417 * S);
+        const keyframesStrip1 = [
+          { p: 0.00, cx: vw * 0.5 / S },
+          { p: 0.08, cx: 1300 },   // Room 1 (Entrance) ends
+          { p: 0.12, cx: 3800 },   // Transition bridge 1 (fast pan!)
+          { p: 0.22, cx: 4259 },   // Room 2 (Living Room)
+          { p: 0.32, cx: 6040 },   // Room 3 (Materials Library)
+          { p: 0.42, cx: 7777 },   // Room 4 (Staircase)
+          { p: 0.50, cx: cxEndStrip1 }, // Room 5 (Reading Corner)
+        ];
+        currentCx = interpolateKeyframes(p, keyframesStrip1);
+        targetX = vw * 0.5 - currentCx * S;
         targetY = 0;
-        currentCx = (vw * 0.5 - targetX) / S;
 
         // Map active room based on currentCx coordinates
         if (currentCx < 2600) {
@@ -316,19 +345,17 @@ export default function PanoramicWalkthrough() {
       }
       // Phase B: Hold on Room 5 so the lamp on the right is fully visible before vertical scrolling
       else if (p <= 0.64) {
-        targetX = vw - 10417 * S;
+        currentCx = cxEndStrip1;
+        targetX = vw * 0.5 - currentCx * S;
         targetY = 0;
-        currentCx = (vw * 0.5 - targetX) / S;
         activeRmIdx = 5; // Reading Corner (05)
       }
       // Phase C: Vertical transition to Strip 2 (Media Wall)
       else if (p < 0.74) {
         const t = (p - 0.64) / 0.10;
-        const xStart = vw - 10417 * S;
-        const xEnd = -6817 * S; // Prevent exposing blank space to the left of Room 6
-        targetX = (1 - t) * xStart + t * xEnd;
+        currentCx = (1 - t) * cxEndStrip1 + t * cxStartStrip2;
+        targetX = vw * 0.5 - currentCx * S;
         targetY = -t * vh;
-        currentCx = (vw * 0.5 - targetX) / S;
 
         if (currentCx < 8700) {
           activeRmIdx = 6; // Media Wall (06)
@@ -340,15 +367,20 @@ export default function PanoramicWalkthrough() {
       else {
         // Hold on TV Scene (Room 6) first to prevent skipping, then pan
         if (p <= 0.84) {
-          targetX = -6817 * S;
+          currentCx = cxStartStrip2;
         } else if (p <= 0.94) {
-          const t = (p - 0.84) / 0.10;
-          targetX = (1 - t) * (-6817 * S) + t * (vw - 12217 * S);
+          const keyframesStrip2 = [
+            { p: 0.84, cx: cxStartStrip2 },
+            { p: 0.86, cx: 9400 },   // Transition bridge 2 (fast pan!)
+            { p: 0.90, cx: 9877 },   // Room 8 (Courtyard Glass)
+            { p: 0.94, cx: cxEndStrip2 }, // Room 9 (Master Bedroom)
+          ];
+          currentCx = interpolateKeyframes(p, keyframesStrip2);
         } else {
-          targetX = vw - 12217 * S;
+          currentCx = cxEndStrip2;
         }
+        targetX = vw * 0.5 - currentCx * S;
         targetY = -vh;
-        currentCx = (vw * 0.5 - targetX) / S;
 
         if (currentCx < 8700) {
           activeRmIdx = 6; // Media Wall (06)
