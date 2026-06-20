@@ -320,7 +320,7 @@ export default function PanoramicWalkthrough() {
     const isTouchDevice = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
     if (isTouchDevice) {
       walkFixed.style.setProperty("pointer-events", "auto", "important");
-      walkFixed.style.setProperty("touch-action", "pan-y", "important");
+      walkFixed.style.setProperty("touch-action", "none", "important");
     }
 
     const handleTouchStart = (e: TouchEvent) => {
