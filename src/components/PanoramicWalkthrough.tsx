@@ -431,7 +431,7 @@ export default function PanoramicWalkthrough() {
         <div id="prog-fill" />
       </div>
 
-      <div id="room-label" ref={roomLabelRef}>
+      <div id="room-label" ref={roomLabelRef} style={{ top: "32%" }}>
         <div id="rl-num" ref={rlNumRef}>01</div>
         <div id="rl-name" ref={rlNameRef}>Entrance</div>
       </div>
